@@ -18,7 +18,10 @@ public:
 		_player( true ),
 		_pondering( false )
 	{
-		memset( _board, 0, sizeof( _board ) );
+		memset( _board, -1, sizeof( _board ) );
+		for ( int x = 1; x <= _G + 1; x++ )
+			for ( int y = 1; y <= _G + 1; y++ )
+				_board[x][y] = 0;
 		resizable( this );
 	}
 	int xp( int x_ ) const
@@ -71,6 +74,77 @@ public:
 		fl_cursor( FL_CURSOR_DEFAULT );
 		onMove();
 	}
+	int countX( int x_, int y_ )
+	{
+		int c = _board[x_][y_];
+		if ( c <= 0 )
+			return 0;
+		int n( 1 );
+		int x( x_ );
+		while ( _board[++x][y_] == c )
+			n++;
+		x = x_;
+		while ( _board[--x][y_] == c )
+			n++;
+		return n;
+	}
+	int countY( int x_, int y_ )
+	{
+		int c = _board[x_][y_];
+		if ( c <= 0 )
+			return 0;
+		int n( 1 );
+		int y( y_ );
+		while ( _board[x_][++y] == c )
+			n++;
+		y = y_;
+		while ( _board[x_][--y] == c )
+			n++;
+		return n;
+	}
+	int countXYLeft( int x_, int y_ )
+	{
+		int c = _board[x_][y_];
+		if ( c <= 0 )
+			return 0;
+		int n( 1 );
+		int y( y_ );
+		int x( x_ );
+		while ( _board[--x][--y] == c )
+			n++;
+		y = y_;
+		x = x_;
+		while ( _board[++x][++y] == c )
+			n++;
+		return n;
+	}
+	int countXYRight( int x_, int y_ )
+	{
+		int c = _board[x_][y_];
+		if ( c <= 0 )
+			return 0;
+		int n( 1 );
+		int y( y_ );
+		int x( x_ );
+		while ( _board[++x][--y] == c )
+			n++;
+		y = y_;
+		x = x_;
+		while ( _board[--x][++y] == c )
+			n++;
+		return n;
+	}
+	bool checkWin( int x_, int y_ )
+	{
+		int n = countX( x_, y_ );
+		if ( n != 5 )
+			n = countY( x_, y_ );
+		if ( n != 5 )
+			n = countXYLeft( x_, y_ );
+		if ( n != 5 )
+			n = countXYRight( x_, y_ );
+		return n == 5;
+	}
 	void setPiece( int x_, int y_, int color_ )
 	{
 		if ( x_ < 1 || x_ > _G + 1 )
@@ -79,11 +153,12 @@ public:
 			return;
 		_board[ x_][ y_ ] = color_ + 1;
 		redraw();
+		if ( checkWin( x_, y_ ) )
+			hide();
 		_player = !_player;
 		if ( !_player )
 		{
 			makeMove();
-
 		}
 	}
 	int handle( int e_ )
