@@ -6,6 +6,7 @@
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <cstdlib>
+#include <cmath>
 
 #define FL_DARK_GRAY fl_darker( FL_GRAY )
 
@@ -31,18 +32,22 @@ public:
 	}
 	int xp( int x_ ) const
 	{
-		return w() / ( _G + 2 ) * x_;
+		int W = w() < h() ? w() : h();
+		return W / ( _G + 2 ) * x_;
 	}
 	int yp( int y_ ) const
 	{
-		return h() / ( _G + 2 ) * y_;
+		int W = w() < h() ? w() : h();
+		return W / ( _G + 2 ) * y_;
 	}
 	void draw_piece( int color_, int x_, int y_ ) const
 	{
 		int x = xp( x_ );
 		int y = yp( y_ );
-		int rw = xp( 1 ) - 2;
-		int rh = yp( 1 ) - 2;
+		int rw = xp( 1 );
+		int rh = yp( 1 );
+		rw -= ceil( (double)rw / 10 );
+		rh -= ceil( (double)rh / 10 );
 		fl_color( color_ == 1 ? FL_WHITE : FL_BLACK );
 		fl_pie( x - rw/2, y - rh/2, rw, rh, 0, 360 );
 		fl_color( FL_GRAY );
@@ -152,6 +157,21 @@ public:
 			n = countXYRight( x_, y_ );
 		return n == 5;
 	}
+	void onResized()
+	{
+		size( xp( _G + 2 ), yp( _G + 2 ) );
+	}
+	static void cb_resized( void *d_ )
+	{
+		static_cast<Board *>( d_ )->onResized();
+	}
+	virtual void resize( int x_, int y_, int w_, int h_ )
+	{
+		Fl::remove_timeout( cb_resized, this );
+		Inherited::resize( x_, y_, w_, h_ );
+		if ( w_ != h_ )
+			Fl::add_timeout( 0.2, cb_resized, this );
+	} 
 	void setPiece( int x_, int y_, int color_ )
 	{
 		if ( x_ < 1 || x_ > _G + 1 )
@@ -200,7 +220,7 @@ private:
 
 		// draw center
 		fl_color( FL_BLACK );
-		fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1), _G / 6 );
+		fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1), ceil( (double)xp( 1 ) / 8 ) );
 
 		// draw pieces
 		for ( int x = 1; x <= _G + 1; x++ )
