@@ -47,7 +47,9 @@ public:
 		fl_pie( x - rw/2, y - rh/2, rw, rh, 0, 360 );
 		fl_color( FL_GRAY );
 		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
-		fl_color( fl_darker( FL_GRAY ) );
+		bool winning_piece = checkWin( x_, y_ );
+		fl_color( winning_piece ? color_ == 1 ?
+			FL_GREEN : FL_RED : fl_darker( FL_GRAY ) );
 		fl_arc( x - rw/2 + 1, y - rh/2 + 1, rw - 2, rh - 2, 0, 360 );
 	}
 	void onMove()
@@ -79,7 +81,7 @@ public:
 		fl_cursor( FL_CURSOR_DEFAULT );
 		onMove();
 	}
-	int countX( int x_, int y_ )
+	int countX( int x_, int y_ ) const
 	{
 		int c = _board[x_][y_];
 		if ( c <= 0 )
@@ -93,7 +95,7 @@ public:
 			n++;
 		return n;
 	}
-	int countY( int x_, int y_ )
+	int countY( int x_, int y_ ) const
 	{
 		int c = _board[x_][y_];
 		if ( c <= 0 )
@@ -107,7 +109,7 @@ public:
 			n++;
 		return n;
 	}
-	int countXYLeft( int x_, int y_ )
+	int countXYLeft( int x_, int y_ ) const
 	{
 		int c = _board[x_][y_];
 		if ( c <= 0 )
@@ -123,7 +125,7 @@ public:
 			n++;
 		return n;
 	}
-	int countXYRight( int x_, int y_ )
+	int countXYRight( int x_, int y_ ) const
 	{
 		int c = _board[x_][y_];
 		if ( c <= 0 )
@@ -139,7 +141,7 @@ public:
 			n++;
 		return n;
 	}
-	bool checkWin( int x_, int y_ )
+	bool checkWin( int x_, int y_ ) const
 	{
 		int n = countX( x_, y_ );
 		if ( n != 5 )
