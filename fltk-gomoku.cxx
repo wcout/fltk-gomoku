@@ -75,8 +75,8 @@ public:
 		int G = _G / 2;
 		while ( 1 )
 		{
-			int x = random() % ( G + 1 ) + G / 2 + 1;
-			int y = random() % ( G + 1 ) + G / 2 + 1;
+			int x = _last_x ? _last_x : random() % ( G + 1 ) + G / 2 + 1;
+			int y = _last_y ? _last_y : random() % ( G + 1 ) + G / 2 + 1;
 			if ( _board[x][y] ) continue;
 			setPiece( x, y, COMPUTER );
 			break;
@@ -91,8 +91,16 @@ public:
 		_pondering = true;
 		fl_cursor( FL_CURSOR_WAIT );
 		Fl::add_timeout( 1.0, cb_move, this );
+		_last_x = 0;
+		_last_y = 0;
 		while ( _pondering )
 		{
+			int x, y;
+			if ( winningMove( x, y ) )
+			{
+				_last_x = x;
+				_last_y = y;
+			}
 			Fl::check();
 		}
 		fl_cursor( FL_CURSOR_DEFAULT );
@@ -172,6 +180,27 @@ public:
 	void onResized()
 	{
 		size( xp( _G + 2 ), yp( _G + 2 ) );
+	}
+	bool tryWin( int x_, int y_, int who_ = COMPUTER )
+	{
+		if ( _board[x_][y_] != 0 )
+			return false;
+		_board[x_][y_] = who_;
+		bool win = checkWin( x_, y_ );
+		_board[x_][y_] = 0;
+		return win;
+	}
+	bool winningMove( int& x_, int& y_ )
+	{
+		for ( int x = 1; x <= _G + 1; x++ )
+			for ( int y = 1; y <= _G + 1; y++ )
+				if ( tryWin( x, y ) )
+				{
+					x_ = x;
+					y_ = y;
+					return true;
+				}
+		return false;
 	}
 	static void cb_resized( void *d_ )
 	{
