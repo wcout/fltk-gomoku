@@ -22,7 +22,8 @@ public:
 		_player( true ),
 		_pondering( false ),
 		_last_x( 0 ),
-		_last_y( 0 )
+		_last_y( 0 ),
+		_wait( false )
 	{
 		fl_message_title_default( label() );
 		clearBoard();
@@ -195,6 +196,7 @@ public:
 		redraw();
 		if ( checkWin( x_, y_ ) )
 		{
+			wait( 0.5 );
 			fl_alert( _board[x_][y_] == PLAYER ? "You win!" : "I win!" );
 			clearBoard();
 			redraw();
@@ -204,6 +206,24 @@ public:
 		{
 			makeMove();
 		}
+	}
+	void onDelay()
+	{
+		_wait = false;
+	}
+	static void cb_delay( void *d_ )
+	{
+		static_cast<Board *>( d_ )->onDelay();
+	}
+	void wait( double delay_ )
+	{
+		Fl::remove_timeout( cb_delay, this );
+		Fl::add_timeout( delay_, cb_delay, this );
+		_wait = true;
+		while ( _wait )
+			Fl::check();
+		Fl::remove_timeout( cb_delay, this );
+		_wait = false;
 	}
 	int handle( int e_ )
 	{
@@ -249,6 +269,7 @@ private:
 	bool _pondering;
 	int _last_x;
 	int _last_y;
+	bool _wait;
 };
 
 int main()
