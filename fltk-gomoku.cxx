@@ -18,7 +18,9 @@ public:
 		Inherited( 600, 600, "FLTK Gomoku" ),
 		_G( 18 ),
 		_player( true ),
-		_pondering( false )
+		_pondering( false ),
+		_last_x( 0 ),
+		_last_y( 0 )
 	{
 		clearBoard();
 		resizable( this );
@@ -53,9 +55,15 @@ public:
 		fl_color( FL_GRAY );
 		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
 		bool winning_piece = checkWin( x_, y_ );
-		fl_color( winning_piece ? color_ == 1 ?
-			FL_GREEN : FL_RED : fl_darker( FL_GRAY ) );
+		if ( _last_x == x_ && _last_y == y_ )
+			fl_color( FL_CYAN );
+		else
+		{
+			fl_color( winning_piece ? color_ == 1 ?
+				FL_GREEN : FL_RED : fl_darker( FL_GRAY ) );
+		}
 		fl_arc( x - rw/2 + 1, y - rh/2 + 1, rw - 2, rh - 2, 0, 360 );
+
 	}
 	void onMove()
 	{
@@ -179,6 +187,8 @@ public:
 		if ( y_ < 1 || y_ > _G + 1 )
 			return;
 		_board[ x_][ y_ ] = color_ + 1;
+		_last_x = x_;
+		_last_y = y_;
 		redraw();
 		if ( checkWin( x_, y_ ) )
 		{
@@ -234,6 +244,8 @@ private:
 	int _board[30][30];
 	bool _player;
 	bool _pondering;
+	int _last_x;
+	int _last_y;
 };
 
 int main()
