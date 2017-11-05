@@ -8,7 +8,9 @@
 #include <cstdlib>
 #include <cmath>
 
-#define FL_DARK_GRAY fl_darker( FL_GRAY )
+static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
+static const char PLAYER = 1;
+static const char COMPUTER = 2;
 
 class Board : public Fl_Double_Window
 {
@@ -22,6 +24,7 @@ public:
 		_last_x( 0 ),
 		_last_y( 0 )
 	{
+		fl_message_title_default( label() );
 		clearBoard();
 		resizable( this );
 	}
@@ -74,7 +77,7 @@ public:
 			int x = random() % ( G + 1 ) + G / 2 + 1;
 			int y = random() % ( G + 1 ) + G / 2 + 1;
 			if ( _board[x][y] ) continue;
-			setPiece( x, y, 1 );
+			setPiece( x, y, COMPUTER );
 			break;
 		}
 	}
@@ -180,19 +183,19 @@ public:
 		if ( w_ != h_ )
 			Fl::add_timeout( 0.2, cb_resized, this );
 	} 
-	void setPiece( int x_, int y_, int color_ )
+	void setPiece( int x_, int y_, int who_ )
 	{
 		if ( x_ < 1 || x_ > _G + 1 )
 			return;
 		if ( y_ < 1 || y_ > _G + 1 )
 			return;
-		_board[ x_][ y_ ] = color_ + 1;
+		_board[ x_][ y_ ] = who_;
 		_last_x = x_;
 		_last_y = y_;
 		redraw();
 		if ( checkWin( x_, y_ ) )
 		{
-			fl_alert( _board[x_][y_] == 1 ? "You win!" : "I win!");
+			fl_alert( _board[x_][y_] == PLAYER ? "You win!" : "I win!" );
 			clearBoard();
 			redraw();
 		}
@@ -208,7 +211,7 @@ public:
 		{
 			int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 			int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
-			setPiece( x, y, 0 );
+			setPiece( x, y, PLAYER );
 			return 1;
 		}
 		return Inherited::handle( e_ );
@@ -241,7 +244,7 @@ private:
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 private:
 	int _G;
-	int _board[30][30];
+	char _board[24][24];
 	bool _player;
 	bool _pondering;
 	int _last_x;
