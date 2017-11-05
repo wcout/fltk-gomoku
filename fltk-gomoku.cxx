@@ -4,6 +4,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/fl_draw.H>
+#include <FL/fl_ask.H>
 #include <cstdlib>
 
 #define FL_DARK_GRAY fl_darker( FL_GRAY )
@@ -18,11 +19,15 @@ public:
 		_player( true ),
 		_pondering( false )
 	{
+		clearBoard();
+		resizable( this );
+	}
+	void clearBoard()
+	{
 		memset( _board, -1, sizeof( _board ) );
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
 				_board[x][y] = 0;
-		resizable( this );
 	}
 	int xp( int x_ ) const
 	{
@@ -154,7 +159,11 @@ public:
 		_board[ x_][ y_ ] = color_ + 1;
 		redraw();
 		if ( checkWin( x_, y_ ) )
-			hide();
+		{
+			fl_alert( _board[x_][y_] == 1 ? "You win!" : "I win!");
+			clearBoard();
+			redraw();
+		}
 		_player = !_player;
 		if ( !_player )
 		{
