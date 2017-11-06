@@ -58,7 +58,7 @@ public:
 		fl_pie( x - rw/2, y - rh/2, rw, rh, 0, 360 );
 		fl_color( FL_GRAY );
 		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
-		bool winning_piece = checkWin( x_, y_ );
+		bool winning_piece = checkLine( x_, y_, 5 );
 		if ( _last_x == x_ && _last_y == y_ )
 			fl_color( FL_CYAN );
 		else
@@ -96,7 +96,7 @@ public:
 		while ( _pondering )
 		{
 			int x, y;
-			if ( winningMove( x, y ) )
+			if ( winningMove( x, y ) || defensiveMove( x, y ) )
 			{
 				_last_x = x;
 				_last_y = y;
@@ -166,16 +166,16 @@ public:
 			n++;
 		return n;
 	}
-	bool checkWin( int x_, int y_ ) const
+	bool checkLine( int x_, int y_, int n_ ) const
 	{
 		int n = countX( x_, y_ );
-		if ( n != 5 )
+		if ( n != n_ )
 			n = countY( x_, y_ );
-		if ( n != 5 )
+		if ( n != n_ )
 			n = countXYLeft( x_, y_ );
-		if ( n != 5 )
+		if ( n != n_ )
 			n = countXYRight( x_, y_ );
-		return n == 5;
+		return n == n_;
 	}
 	void onResized()
 	{
@@ -186,7 +186,25 @@ public:
 		if ( _board[x_][y_] != 0 )
 			return false;
 		_board[x_][y_] = who_;
-		bool win = checkWin( x_, y_ );
+		bool win = checkLine( x_, y_, 5 );
+		_board[x_][y_] = 0;
+		return win;
+	}
+	bool try4( int x_, int y_, int who_ = COMPUTER )
+	{
+		if ( _board[x_][y_] != 0 )
+			return false;
+		_board[x_][y_] = who_;
+		bool win = checkLine( x_, y_, 4 );
+		_board[x_][y_] = 0;
+		return win;
+	}
+	bool try3( int x_, int y_, int who_ = COMPUTER )
+	{
+		if ( _board[x_][y_] != 0 )
+			return false;
+		_board[x_][y_] = who_;
+		bool win = checkLine( x_, y_, 3 );
 		_board[x_][y_] = 0;
 		return win;
 	}
@@ -200,6 +218,43 @@ public:
 					y_ = y;
 					return true;
 				}
+		for ( int x = 1; x <= _G + 1; x++ )
+			for ( int y = 1; y <= _G + 1; y++ )
+				if ( try4( x, y ) )
+				{
+					x_ = x;
+					y_ = y;
+					return true;
+				}
+		return false;
+	}
+	bool defensiveMove( int& x_, int& y_ )
+	{
+		for ( int x = 1; x <= _G + 1; x++ )
+			for ( int y = 1; y <= _G + 1; y++ )
+				if ( tryWin( x, y, PLAYER ) )
+				{
+					x_ = x;
+					y_ = y;
+					return true;
+				}
+		for ( int x = 1; x <= _G + 1; x++ )
+			for ( int y = 1; y <= _G + 1; y++ )
+				if ( try4( x, y, PLAYER ) )
+				{
+					x_ = x;
+					y_ = y;
+					return true;
+				}
+		for ( int x = 1; x <= _G + 1; x++ )
+			for ( int y = 1; y <= _G + 1; y++ )
+				if ( try3( x, y, PLAYER ) )
+				{
+					x_ = x;
+					y_ = y;
+					return true;
+				}
+
 		return false;
 	}
 	static void cb_resized( void *d_ )
@@ -223,7 +278,7 @@ public:
 		_last_x = x_;
 		_last_y = y_;
 		redraw();
-		if ( checkWin( x_, y_ ) )
+		if ( checkLine( x_, y_, 5 ) )
 		{
 			wait( 0.5 );
 			fl_alert( _board[x_][y_] == PLAYER ? "You win!" : "I win!" );
