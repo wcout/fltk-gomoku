@@ -5,8 +5,12 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
+#include <vector>
 #include <cstdlib>
 #include <cmath>
+#include <ctime>
+
+using namespace std;
 
 static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
 static const char PLAYER = 1;
@@ -122,20 +126,41 @@ public:
 	}
 	void onMove()
 	{
-		// stub
-		int G = _G / 2;
-		while ( 1 )
-		{
-			int x = _last_x ? _last_x : random() % ( G + 1 ) + G / 2 + 1;
-			int y = _last_y ? _last_y : random() % ( G + 1 ) + G / 2 + 1;
-			if ( _board[x][y] ) continue;
-			setPiece( x, y, COMPUTER );
-			break;
-		}
+		setPiece( _last_x, _last_y, COMPUTER );
 	}
 	static void cb_move( void *d_ )
 	{
 		(static_cast<Board *>(d_))->pondering( false );
+	}
+	bool randomMove( int& x_, int& y_ )
+	{
+		vector<Pos> move;
+		int r( 0 );
+		for ( int x = 1; x <= _G + 1; x++ )
+		{
+			for ( int y = 1; y <= _G + 1; y++ )
+			{
+				if ( _board[x][y] == 0 )
+				{
+					if ( x > _G / 3 && x < _G - _G / 3 &&
+					     y > _G / 3 && y < _G - _G / 3 )
+					{
+						move.insert( move.begin(), Pos( x, y ) );
+						r++;
+					}
+					else
+						move.push_back( Pos( x, y ) );
+				}
+			}
+		}
+		if ( move.empty() )
+			return false;
+		if ( !r )
+			r = move.size();
+		r = random() % r;
+		x_ = move[r].x;
+		y_ = move[r].y;
+		return true;
 	}
 	void makeMove()
 	{
@@ -144,17 +169,13 @@ public:
 		Fl::add_timeout( 1.0, cb_move, this );
 		_last_x = 0;
 		_last_y = 0;
+		if ( !winningMove( _last_x, _last_y ) && !defensiveMove( _last_x, _last_y ) )
+			randomMove( _last_x, _last_y );
 		while ( _pondering )
-		{
-			int x, y;
-			if ( winningMove( x, y ) || defensiveMove( x, y ) )
-			{
-				_last_x = x;
-				_last_y = y;
-			}
 			Fl::check();
-		}
 		fl_cursor( FL_CURSOR_DEFAULT );
+		_pondering = false;
+		Fl::remove_timeout( cb_move, this );
 		onMove();
 	}
 	int count( int x_, int y_,  int dx_, int dy_, int& free1_, int& free2_ ) const
@@ -302,7 +323,6 @@ public:
 					return true;
 				}
 
-
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
 				if ( try4( x, y ) )
@@ -375,18 +395,21 @@ public:
 	}
 	void setPiece( int x_, int y_, int who_ )
 	{
-		if ( x_ < 1 || x_ > _G + 1 )
-			return;
-		if ( y_ < 1 || y_ > _G + 1 )
-			return;
-		_board[ x_][ y_ ] = who_;
-		_last_x = x_;
-		_last_y = y_;
-		redraw();
-		if ( checkLine( x_, y_, 5 ) )
+		bool adraw = ( x_ ==  0 || y_ == 0 );
+		if ( !adraw )
+		{
+			_board[ x_][ y_ ] = who_;
+			_last_x = x_;
+			_last_y = y_;
+			redraw();
+		}
+		if ( _player )
+			adraw = !randomMove( x_, y_ );
+		if ( adraw || checkLine( x_, y_, 5 ) )
 		{
 			wait( 0.5 );
-			fl_alert( _board[x_][y_] == PLAYER ? "You win!" : "I win!" );
+			fl_alert( adraw ? "No more moves!\n\nGame ends adraw." :
+				_board[x_][y_] == PLAYER ? "You win!" : "I win!" );
 			clearBoard();
 			redraw();
 		}
@@ -423,6 +446,14 @@ public:
 			setPiece( x, y, PLAYER );
 			return 1;
 		}
+#if 1
+		if ( e_ == FL_MOVE && _player )
+		{
+			_last_x = 0;
+			_last_y = 0;
+			redraw();
+		}
+#endif
 		return Inherited::handle( e_ );
 	}
 private:
@@ -465,6 +496,7 @@ private:
 int main()
 {
 	Fl::scheme( "gtk+" );
+	srand( time( 0 ) );
 	Board g;
 	g.show();
 	return Fl::run();
