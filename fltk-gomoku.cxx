@@ -12,6 +12,56 @@ static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
 static const char PLAYER = 1;
 static const char COMPUTER = 2;
 
+enum Direction
+{
+	Horizontal = 1,
+	Vertical = 2,
+	TopLeftBottomRight = 3,
+	TopRightBottomLeft = 4
+};
+
+struct PosInfo
+{
+	int n;
+	int f1;
+	int f2;
+	PosInfo() :
+		n( 0 ),
+		f1( 0 ),
+		f2( 0 )
+	{}
+	void init() { n = 0; f1 = 0; f2 = 0; }
+	bool has5() const { return n == 5; }
+	bool wins() const { return has5(); }
+	bool canWin() const { return n + f1 + f2 >= 5; }
+	bool has4() const { return n == 4 && canWin(); }
+	bool has3() const { return n == 3 && canWin(); }
+};
+
+struct Eval
+{
+	PosInfo info[4 + 1];
+	void init() { for ( int i = 1; i <= 4; i++ ) info[i].init(); }
+	bool has3Fork() const
+	{
+		return ( ( info[1].has3() || info[1].has4() ) +
+		         ( info[2].has3() || info[2].has4() ) +
+		         ( info[3].has3() || info[3].has4() ) +
+		         ( info[4].has3() || info[4].has4() ) >= 2 );
+	}
+};
+
+struct Pos
+{
+	int x;
+	int y;
+	Eval eval;
+	Pos( int x_, int y_ ) :
+		x( x_ ),
+		y( y_ )
+	{}
+};
+
 class Board : public Fl_Double_Window
 {
 typedef Fl_Double_Window Inherited;
@@ -59,15 +109,16 @@ public:
 		fl_color( FL_GRAY );
 		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
 		bool winning_piece = checkLine( x_, y_, 5 );
+		fl_color( FL_DARK_GRAY );
+		fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
 		if ( _last_x == x_ && _last_y == y_ )
 			fl_color( FL_CYAN );
+		else if ( winning_piece )
+			fl_color( color_ == 1 ? FL_GREEN : FL_RED );
 		else
-		{
-			fl_color( winning_piece ? color_ == 1 ?
-				FL_GREEN : FL_RED : fl_darker( FL_GRAY ) );
-		}
+			fl_line_style( FL_SOLID, 1 );
 		fl_arc( x - rw/2 + 1, y - rh/2 + 1, rw - 2, rh - 2, 0, 360 );
-
+		fl_line_style( 0, 0 );
 	}
 	void onMove()
 	{
@@ -106,65 +157,78 @@ public:
 		fl_cursor( FL_CURSOR_DEFAULT );
 		onMove();
 	}
-	int countX( int x_, int y_ ) const
+	int count( int x_, int y_,  int dx_, int dy_, int& free1_, int& free2_ ) const
 	{
+		free1_ = 0;
+		free2_ = 0;
 		int c = _board[x_][y_];
 		if ( c <= 0 )
 			return 0;
 		int n( 1 );
 		int x( x_ );
-		while ( _board[++x][y_] == c )
+		int y( y_ );
+		x += dx_;
+		y += dy_;
+		while ( _board[x][y] == c )
+		{
 			n++;
+			x += dx_;
+			y += dy_;
+		}
+		while ( _board[x][y] == 0 )
+		{
+			free1_++;
+			x += dx_;
+			y += dy_;
+			if ( free1_ + free2_ + n >= 5 ) break;
+		}
 		x = x_;
-		while ( _board[--x][y_] == c )
+		y = y_;
+		dx_ = -dx_;
+		dy_ = -dy_;
+		x += dx_;
+		y += dy_;
+		while ( _board[x][y] == c )
+		{
 			n++;
+			x += dx_;
+			y += dy_;
+		}
+		while ( _board[x][y] == 0 )
+		{
+			free2_++;
+			x += dx_;
+			y += dy_;
+			if ( free1_ + free2_ + n >= 5 ) break;
+		}
 		return n;
+	}
+	int countX( int x_, int y_ ) const
+	{
+		int f1, f2;
+		return count( x_, y_, 1, 0, f1, f2 );
 	}
 	int countY( int x_, int y_ ) const
 	{
-		int c = _board[x_][y_];
-		if ( c <= 0 )
-			return 0;
-		int n( 1 );
-		int y( y_ );
-		while ( _board[x_][++y] == c )
-			n++;
-		y = y_;
-		while ( _board[x_][--y] == c )
-			n++;
-		return n;
+		int f1, f2;
+		return count( x_, y_, 0, 1, f1, f2 );
 	}
 	int countXYLeft( int x_, int y_ ) const
 	{
-		int c = _board[x_][y_];
-		if ( c <= 0 )
-			return 0;
-		int n( 1 );
-		int y( y_ );
-		int x( x_ );
-		while ( _board[--x][--y] == c )
-			n++;
-		y = y_;
-		x = x_;
-		while ( _board[++x][++y] == c )
-			n++;
-		return n;
+		int f1, f2;
+		return count( x_, y_, -1, -1, f1, f2 );
 	}
 	int countXYRight( int x_, int y_ ) const
 	{
-		int c = _board[x_][y_];
-		if ( c <= 0 )
-			return 0;
-		int n( 1 );
-		int y( y_ );
-		int x( x_ );
-		while ( _board[++x][--y] == c )
-			n++;
-		y = y_;
-		x = x_;
-		while ( _board[--x][++y] == c )
-			n++;
-		return n;
+		int f1, f2;
+		return count( x_, y_, 1, -1, f1, f2 );
+	}
+	void countPos( int x_, int y_, Eval& pos_ ) const
+	{
+		pos_.info[1].n = count( x_, y_,  1,  0, pos_.info[1].f1, pos_.info[1].f2 );
+		pos_.info[2].n = count( x_, y_,  1,  1, pos_.info[2].f1, pos_.info[2].f2 );
+		pos_.info[3].n = count( x_, y_, -1, -1, pos_.info[3].f1, pos_.info[3].f2 );
+		pos_.info[4].n = count( x_, y_,  1, -1, pos_.info[4].f1, pos_.info[5].f2 );
 	}
 	bool checkLine( int x_, int y_, int n_ ) const
 	{
@@ -208,6 +272,17 @@ public:
 		_board[x_][y_] = 0;
 		return win;
 	}
+	bool eval( int x_, int y_, int who_ = COMPUTER )
+	{
+		if ( _board[x_][y_] != 0 )
+			return false;
+		_board[x_][y_] = who_;
+		Eval& p = _eval[ x_ ][ y_ ];
+		p.init();
+		countPos( x_, y_, p );
+		_board[x_][y_] = 0;
+		return p.has3Fork();
+	}
 	bool winningMove( int& x_, int& y_ )
 	{
 		for ( int x = 1; x <= _G + 1; x++ )
@@ -220,19 +295,17 @@ public:
 				}
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
-				if ( try4( x, y ) )
+				if ( tryWin( x, y, PLAYER ) )
 				{
 					x_ = x;
 					y_ = y;
 					return true;
 				}
-		return false;
-	}
-	bool defensiveMove( int& x_, int& y_ )
-	{
+
+
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
-				if ( tryWin( x, y, PLAYER ) )
+				if ( try4( x, y ) )
 				{
 					x_ = x;
 					y_ = y;
@@ -246,6 +319,38 @@ public:
 					y_ = y;
 					return true;
 				}
+
+		// test 3-fork
+		for ( int x = 1; x <= _G + 1; x++ )
+		{
+			for ( int y = 1; y <= _G + 1; y++ )
+			{
+				if ( eval( x, y ) )
+				{
+					x_ = x;
+					y_ = y;
+					return true;
+				}
+			}
+		}
+
+		for ( int x = 1; x <= _G + 1; x++ )
+		{
+			for ( int y = 1; y <= _G + 1; y++ )
+			{
+				if ( eval( x, y, PLAYER ) )
+				{
+					x_ = x;
+					y_ = y;
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+	bool defensiveMove( int& x_, int& y_ )
+	{
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
 				if ( try3( x, y, PLAYER ) )
@@ -267,7 +372,7 @@ public:
 		Inherited::resize( x_, y_, w_, h_ );
 		if ( w_ != h_ )
 			Fl::add_timeout( 0.2, cb_resized, this );
-	} 
+	}
 	void setPiece( int x_, int y_, int who_ )
 	{
 		if ( x_ < 1 || x_ > _G + 1 )
@@ -349,6 +454,7 @@ private:
 private:
 	int _G;
 	char _board[24][24];
+	Eval _eval[24][24];
 	bool _player;
 	bool _pondering;
 	int _last_x;
@@ -358,6 +464,7 @@ private:
 
 int main()
 {
+	Fl::scheme( "gtk+" );
 	Board g;
 	g.show();
 	return Fl::run();
