@@ -404,7 +404,10 @@ public:
 			redraw();
 		}
 		if ( _player )
-			adraw = !randomMove( x_, y_ );
+		{
+			int x, y;
+			adraw = !randomMove( x, y );
+		}
 		if ( adraw || checkLine( x_, y_, 5 ) )
 		{
 			wait( 0.5 );
@@ -461,7 +464,8 @@ private:
 	{
 		// draw board
 		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
-		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), fl_lighter( FL_YELLOW ) );
+//		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), fl_lighter( FL_YELLOW ) );
+		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), fl_rgb_color( 0x67, 0x4d, 0x0f ) );
 
 		// draw grid
 		fl_rect( 0, 0, xp(_G+2), yp(_G+2), FL_DARK_GRAY );
