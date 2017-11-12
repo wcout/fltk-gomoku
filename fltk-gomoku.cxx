@@ -1,11 +1,18 @@
 /*
 	FLTK Gomoku (c) 2017
 */
+#include <config.h>
+//#undef FLTK_USE_NANOSVG
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
+#ifdef FLTK_USE_NANOSVG
+#include <FL/Fl_SVG_Image.H>
+#endif
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <vector>
+#include <iostream>
+#include <sstream>
 #include <cstdlib>
 #include <cmath>
 #include <ctime>
@@ -13,8 +20,11 @@
 using namespace std;
 
 static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
+static const Fl_Color FL_LIGHT_YELLOW = fl_lighter( FL_YELLOW );
+static const Fl_Color FL_BROWN = fl_rgb_color( 0x67, 0x4d, 0x0f );
 static const char PLAYER = 1;
 static const char COMPUTER = 2;
+
 
 enum Direction
 {
@@ -77,7 +87,11 @@ public:
 		_pondering( false ),
 		_last_x( 0 ),
 		_last_y( 0 ),
-		_wait( false )
+		_waiting( false ),
+		_games( 0 ),
+		_moves( 0 ),
+		_player_wins( 0 ),
+		_computer_wins( 0 )
 	{
 		fl_message_title_default( label() );
 		clearBoard();
@@ -102,16 +116,39 @@ public:
 	}
 	void draw_piece( int color_, int x_, int y_ ) const
 	{
+#ifdef FLTK_USE_NANOSVG
+		#include "go_w_svg.h"
+		#include "go_b_svg.h"
+		static Fl_SVG_Image *white_piece = 0;
+		static Fl_SVG_Image *black_piece = 0;
+#endif
+		// calc. dimensions
 		int x = xp( x_ );
 		int y = yp( y_ );
 		int rw = xp( 1 );
 		int rh = yp( 1 );
 		rw -= ceil( (double)rw / 10 );
 		rh -= ceil( (double)rh / 10 );
+#ifdef FLTK_USE_NANOSVG
+		if ( !white_piece )
+			white_piece = new Fl_SVG_Image( NULL, Go_White_Piece );
+		if ( !black_piece )
+		{
+			black_piece = new Fl_SVG_Image( NULL, Go_Black_Piece );
+		}
+		Fl_SVG_Image *piece = color_ == 1 ? white_piece : black_piece;
+		piece->resize( rw, rh );
+		piece->draw( x - rw/2, y - rh/2 );
+#else
+		// white or black piece
 		fl_color( color_ == 1 ? FL_WHITE : FL_BLACK );
 		fl_pie( x - rw/2, y - rh/2, rw, rh, 0, 360 );
+
+		// outline
 		fl_color( FL_GRAY );
 		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
+#endif
+		// highlight
 		bool winning_piece = checkLine( x_, y_, 5 );
 		fl_color( FL_DARK_GRAY );
 		fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
@@ -120,8 +157,17 @@ public:
 		else if ( winning_piece )
 			fl_color( color_ == 1 ? FL_GREEN : FL_RED );
 		else
+		{
 			fl_line_style( FL_SOLID, 1 );
+#ifdef FLTK_USE_NANOSVG
+			return;
+#endif
+		}
+#ifdef FLTK_USE_NANOSVG
+		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
+#else
 		fl_arc( x - rw/2 + 1, y - rh/2 + 1, rw - 2, rh - 2, 0, 360 );
+#endif
 		fl_line_style( 0, 0 );
 	}
 	void onMove()
@@ -170,7 +216,10 @@ public:
 		_last_x = 0;
 		_last_y = 0;
 		if ( !winningMove( _last_x, _last_y ) && !defensiveMove( _last_x, _last_y ) )
+		{
 			randomMove( _last_x, _last_y );
+			cout << "randomMove at " << _last_x << "/" << _last_y << endl;
+		}
 		while ( _pondering )
 			Fl::check();
 		fl_cursor( FL_CURSOR_DEFAULT );
@@ -310,6 +359,7 @@ public:
 			for ( int y = 1; y <= _G + 1; y++ )
 				if ( tryWin( x, y ) )
 				{
+					cout << "winnungMove tryWin at " << x << "/" << y << endl;
 					x_ = x;
 					y_ = y;
 					return true;
@@ -318,6 +368,7 @@ public:
 			for ( int y = 1; y <= _G + 1; y++ )
 				if ( tryWin( x, y, PLAYER ) )
 				{
+					cout << "winnungMove tryWin PLAYER at " << x << "/" << y << endl;
 					x_ = x;
 					y_ = y;
 					return true;
@@ -329,12 +380,14 @@ public:
 				{
 					x_ = x;
 					y_ = y;
+					cout << "winnungMove try4 at " << x << "/" << y << endl;
 					return true;
 				}
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
 				if ( try4( x, y, PLAYER ) )
 				{
+					cout << "winnungMove try4 PLAYER at " << x << "/" << y << endl;
 					x_ = x;
 					y_ = y;
 					return true;
@@ -347,6 +400,7 @@ public:
 			{
 				if ( eval( x, y ) )
 				{
+					cout << "winnungMove eval at " << x << "/" << y << endl;
 					x_ = x;
 					y_ = y;
 					return true;
@@ -360,6 +414,7 @@ public:
 			{
 				if ( eval( x, y, PLAYER ) )
 				{
+					cout << "winnungMove eval PLAYER at " << x << "/" << y << endl;
 					x_ = x;
 					y_ = y;
 					return true;
@@ -375,6 +430,7 @@ public:
 			for ( int y = 1; y <= _G + 1; y++ )
 				if ( try3( x, y, PLAYER ) )
 				{
+					cout << "defensiveMove try3 at " << x << "/" << y << endl;
 					x_ = x;
 					y_ = y;
 					return true;
@@ -395,6 +451,7 @@ public:
 	}
 	void setPiece( int x_, int y_, int who_ )
 	{
+		_moves++;
 		bool adraw = ( x_ ==  0 || y_ == 0 );
 		if ( !adraw )
 		{
@@ -410,9 +467,17 @@ public:
 		}
 		if ( adraw || checkLine( x_, y_, 5 ) )
 		{
+			_games++;
+			bool player = _board[x_][y_] == PLAYER;
+			if ( !adraw && player ) _player_wins++;
+			else if ( !adraw ) _computer_wins++;
+			ostringstream stat;
+			stat << endl << endl << _games << " games - " <<
+				_player_wins << " : " << _computer_wins <<
+				endl << endl << "( average moves: " << _moves / _games << ")";
 			wait( 0.5 );
-			fl_alert( adraw ? "No more moves!\n\nGame ends adraw." :
-				_board[x_][y_] == PLAYER ? "You win!" : "I win!" );
+			fl_alert( adraw ? "No more moves!\n\nGame ends adraw.%s" :
+				player ? "You managed to win!%s" : "FLTK wins!%s", stat.str().c_str() );
 			clearBoard();
 			redraw();
 		}
@@ -424,7 +489,7 @@ public:
 	}
 	void onDelay()
 	{
-		_wait = false;
+		_waiting = false;
 	}
 	static void cb_delay( void *d_ )
 	{
@@ -434,11 +499,11 @@ public:
 	{
 		Fl::remove_timeout( cb_delay, this );
 		Fl::add_timeout( delay_, cb_delay, this );
-		_wait = true;
-		while ( _wait )
+		_waiting = true;
+		while ( _waiting )
 			Fl::check();
 		Fl::remove_timeout( cb_delay, this );
-		_wait = false;
+		_waiting = false;
 	}
 	int handle( int e_ )
 	{
@@ -464,8 +529,8 @@ private:
 	{
 		// draw board
 		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
-//		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), fl_lighter( FL_YELLOW ) );
-		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), fl_rgb_color( 0x67, 0x4d, 0x0f ) );
+//		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), FL_LIGHT_YELLOW );
+		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), FL_BROWN );
 
 		// draw grid
 		fl_rect( 0, 0, xp(_G+2), yp(_G+2), FL_DARK_GRAY );
@@ -494,12 +559,17 @@ private:
 	bool _pondering;
 	int _last_x;
 	int _last_y;
-	bool _wait;
+	bool _waiting;
+	int _games;
+	int _moves;
+	int _player_wins;
+	int _computer_wins;
 };
 
 int main()
 {
 	Fl::scheme( "gtk+" );
+	Fl::get_system_colors();
 	srand( time( 0 ) );
 	Board g;
 	g.show();
