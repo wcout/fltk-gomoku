@@ -22,6 +22,8 @@ using namespace std;
 static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
 static const Fl_Color FL_LIGHT_YELLOW = fl_lighter( FL_YELLOW );
 static const Fl_Color FL_BROWN = fl_rgb_color( 0x67, 0x4d, 0x0f );
+static const Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
+static const Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 static const char PLAYER = 1;
 static const char COMPUTER = 2;
 
@@ -530,10 +532,10 @@ private:
 		// draw board
 		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
 //		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), FL_LIGHT_YELLOW );
-		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), FL_BROWN );
+		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), BOARD_COLOR );
 
 		// draw grid
-		fl_rect( 0, 0, xp(_G+2), yp(_G+2), FL_DARK_GRAY );
+		fl_rect( 0, 0, xp(_G+2), yp(_G+2), BOARD_GRID_COLOR );
 		for ( int x = 0; x <= _G; x++ )
 			fl_line( xp(x + 1 ), yp( 1 ), xp( x + 1 ), yp( 1  + _G ) );
 
@@ -541,8 +543,17 @@ private:
 			fl_line( xp( 1 ), yp( y + 1), xp( 1 + _G ), yp( y + 1 ) );
 
 		// draw center
+		int r = ceil( (double)xp( 1 ) / 12 );
 		fl_color( FL_BLACK );
-		fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1), ceil( (double)xp( 1 ) / 8 ) );
+		fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1), r );
+		fl_circle( xp( _G / 4 + 1 ), yp( _G / 4 + 1), r );
+		fl_circle( xp( _G / 4 + 1 ), yp( _G / 2 + 1), r );
+		fl_circle( xp( _G / 2 + 1 ), yp( _G / 4 + 1), r );
+		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 4 + 1), r );
+		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 2 + 1), r );
+		fl_circle( xp(  _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
+		fl_circle( xp(  _G / 2 + 1 ), yp( _G - _G / 4 + 1), r );
+		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
 
 		// draw pieces
 		for ( int x = 1; x <= _G + 1; x++ )
