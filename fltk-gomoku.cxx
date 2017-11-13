@@ -105,6 +105,7 @@ public:
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
 				_board[x][y] = 0;
+		_history.clear();
 	}
 	int xp( int x_ ) const
 	{
@@ -457,6 +458,7 @@ public:
 		bool adraw = ( x_ ==  0 || y_ == 0 );
 		if ( !adraw )
 		{
+			_history.push_back( Pos( x_, y_ ) );
 			_board[ x_][ y_ ] = who_;
 			_last_x = x_;
 			_last_y = y_;
@@ -509,12 +511,26 @@ public:
 	}
 	int handle( int e_ )
 	{
-		if ( e_ == FL_PUSH && _player )
+		if ( e_ == FL_PUSH && _player && Fl::event_button() == 1 )
 		{
 			int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 			int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
 			setPiece( x, y, PLAYER );
 			return 1;
+		}
+		if ( e_ == FL_KEYDOWN && _player && Fl::event_key( FL_BackSpace ) )
+		{
+			if ( _history.size() >= 2 )
+			{
+				for ( int i = 0; i < 2; i++ )
+				{
+					Pos pos = _history.back();
+					_history.pop_back();
+					_board[ pos.x ][ pos.y ] = 0;
+					_moves--;
+				}
+				redraw();
+			}
 		}
 #if 1
 		if ( e_ == FL_MOVE && _player )
@@ -543,17 +559,20 @@ private:
 			fl_line( xp( 1 ), yp( y + 1), xp( 1 + _G ), yp( y + 1 ) );
 
 		// draw center
-		int r = ceil( (double)xp( 1 ) / 12 );
-		fl_color( FL_BLACK );
-		fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1), r );
-		fl_circle( xp( _G / 4 + 1 ), yp( _G / 4 + 1), r );
-		fl_circle( xp( _G / 4 + 1 ), yp( _G / 2 + 1), r );
-		fl_circle( xp( _G / 2 + 1 ), yp( _G / 4 + 1), r );
-		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 4 + 1), r );
-		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 2 + 1), r );
-		fl_circle( xp(  _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
-		fl_circle( xp(  _G / 2 + 1 ), yp( _G - _G / 4 + 1), r );
-		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
+		if ( xp( 1 ) > 8 )
+		{
+			int r = ceil( (double)xp( 1 ) / 12 );
+			fl_color( FL_BLACK );
+			fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1), r );
+			fl_circle( xp( _G / 4 + 1 ), yp( _G / 4 + 1), r );
+			fl_circle( xp( _G / 4 + 1 ), yp( _G / 2 + 1), r );
+			fl_circle( xp( _G / 2 + 1 ), yp( _G / 4 + 1), r );
+			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 4 + 1), r );
+			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 2 + 1), r );
+			fl_circle( xp(  _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
+			fl_circle( xp(  _G / 2 + 1 ), yp( _G - _G / 4 + 1), r );
+			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
+		}
 
 		// draw pieces
 		for ( int x = 1; x <= _G + 1; x++ )
@@ -575,6 +594,7 @@ private:
 	int _moves;
 	int _player_wins;
 	int _computer_wins;
+	vector<Pos> _history;
 };
 
 int main()
