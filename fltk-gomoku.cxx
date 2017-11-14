@@ -85,10 +85,12 @@ struct Pos
 {
 	int x;
 	int y;
+	int value;
 	Eval eval;
-	Pos( int x_, int y_ ) :
+	Pos( int x_, int y_, int value_ = 0 ) :
 		x( x_ ),
-		y( y_ )
+		y( y_ ),
+		value( value_ )
 	{}
 };
 
@@ -280,7 +282,7 @@ public:
 		Fl::add_timeout( 1.0, cb_move, this );
 		_last_x = 0;
 		_last_y = 0;
-		if ( !eval( _last_x, _last_y ) )
+		if ( !findMove( _last_x, _last_y ) )
 		{
 			randomMove( _last_x, _last_y );
 			cout << "randomMove at " << _last_x << "/" << _last_y << endl;
@@ -317,91 +319,101 @@ public:
 	{
 		size( xp( _G + 2 ), yp( _G + 2 ) );
 	}
-	bool eval( int& x_, int& y_ )
+	bool findMove( int& x_, int& y_ )
 	{
-		Board board;
-		memcpy( &board, &_board, sizeof( board ) );
+		vector<Pos> moves;
 		for ( int x = 1; x <= _G + 1; x++ )
 		{
 			for ( int y = 1; y <= _G + 1; y++ )
 			{
-				if ( board[x][y] == 0 )
+				if ( _board[x][y] == 0 )
 				{
-					board[x][y] = COMPUTER;
-					Eval ec;
-					countPos( x, y, ec, board );
-					if ( ec.wins() )
-					{
-						cout << "winnungMove COMPUTER wins at " << x << "/" << y << endl;
-						x_ = x;
-						y_ = y;
-						return true;
-					}
-
-					board[x][y] = PLAYER;
-					Eval ep;
-					countPos( x, y, ep, board );
-					board[x][y] = 0;
-					if ( ep.wins() )
-					{
-						cout << "winnungMove PLAYER wins at " << x << "/" << y << endl;
-						x_ = x;
-						y_ = y;
-						return true;
-					}
-
-					if ( ec.has4() )
-					{
-						x_ = x;
-						y_ = y;
-						cout << "winnungMove has4 COMPUTER at " << x << "/" << y << endl;
-						return true;
-					}
-
-					if ( ep.has4() )
-					{
-						x_ = x;
-						y_ = y;
-						cout << "winnungMove has4 PLAYER at " << x << "/" << y << endl;
-						return true;
-					}
-
-					if ( ec.has3Fork() )
-					{
-						x_ = x;
-						y_ = y;
-						cout << "winnungMove has3Fork COMPUTER at " << x << "/" << y << endl;
-						return true;
-					}
-
-					if ( ep.has3Fork() )
-					{
-						x_ = x;
-						y_ = y;
-						cout << "winnungMove has3Fork PLAYER at " << x << "/" << y << endl;
-						return true;
-					}
-
-					if ( ec.has3() )
-					{
-						x_ = x;
-						y_ = y;
-						cout << "winnungMove has3 COMPUTER at " << x << "/" << y << endl;
-						return true;
-					}
-
-					if ( ep.has3() )
-					{
-						x_ = x;
-						y_ = y;
-						cout << "winnungMove has3 PLAYER at " << x << "/" << y << endl;
-						return true;
-					}
+					int value = eval( x, y );
+					if ( value)
+						moves.push_back( Pos( x, y, value ) );
 				}
 			}
 		}
+		cout << moves.size() << " moves evaluated" << endl;
+		if ( moves.empty() )
+			return false;
 
-		return false;
+		int max_value = 0;
+		size_t max_pos = 0;
+		for ( size_t i = 0; i < moves.size(); i++ )
+		{
+			if ( moves[i].value > max_value )
+			{
+				max_value = moves[i].value;
+				max_pos = i;
+			}
+		}
+		x_ = moves[max_pos].x;
+		y_ = moves[max_pos].y;
+		return true;
+	}
+
+	int eval( int x, int y )
+	{
+		Board board;
+		memcpy( &board, &_board, sizeof( board ) );
+
+		board[x][y] = COMPUTER;
+		Eval ec;
+		countPos( x, y, ec, board );
+		if ( ec.wins() )
+		{
+			cout << "winnungMove COMPUTER wins at " << x << "/" << y << endl;
+			return 10000;
+		}
+
+		board[x][y] = PLAYER;
+		Eval ep;
+		countPos( x, y, ep, board );
+		board[x][y] = 0;
+		if ( ep.wins() )
+		{
+			cout << "winnungMove PLAYER wins at " << x << "/" << y << endl;
+			return 9000;
+		}
+
+		if ( ec.has4() )
+		{
+			cout << "winnungMove has4 COMPUTER at " << x << "/" << y << endl;
+			return 8000;
+		}
+
+		if ( ep.has4() )
+		{
+			cout << "winnungMove has4 PLAYER at " << x << "/" << y << endl;
+			return 7000;
+		}
+
+		if ( ec.has3Fork() )
+		{
+			cout << "winnungMove has3Fork COMPUTER at " << x << "/" << y << endl;
+			return 6000;
+		}
+
+		if ( ep.has3Fork() )
+		{
+			cout << "winnungMove has3Fork PLAYER at " << x << "/" << y << endl;
+			return 5000;
+		}
+
+		if ( ec.has3() )
+		{
+			cout << "winnungMove has3 COMPUTER at " << x << "/" << y << endl;
+			return 4000;
+		}
+
+		if ( ep.has3() )
+		{
+			cout << "winnungMove has3 PLAYER at " << x << "/" << y << endl;
+			return 3000;
+		}
+
+		return 0;
 	}
 	static void cb_resized( void *d_ )
 	{
