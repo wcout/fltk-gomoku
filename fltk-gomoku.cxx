@@ -54,10 +54,16 @@ struct PosInfo
 	bool has3() const { return n == 3 && canWin(); }
 };
 
+typedef char Board[24][24];
+
 struct Eval
 {
 	PosInfo info[4 + 1];
 	void init() { for ( int i = 1; i <= 4; i++ ) info[i].init(); }
+	bool wins() const
+	{
+		return info[1].wins() || info[2].wins() || info[3].wins() || info[4].wins();
+	}
 	bool has4() const
 	{
 		return info[1].has4() || info[2].has4() || info[3].has4() || info[4].has4();
@@ -86,11 +92,59 @@ struct Pos
 	{}
 };
 
-class Board : public Fl_Double_Window
+static int count( int x_, int y_,  int dx_, int dy_, int& free1_, int& free2_,
+           const Board& board_ )
+{
+	free1_ = 0;
+	free2_ = 0;
+	int c = board_[x_][y_];
+	if ( c <= 0 )
+		return 0;
+	int n( 1 );
+	int x( x_ );
+	int y( y_ );
+	x += dx_;
+	y += dy_;
+	while ( board_[x][y] == c )
+	{
+		n++;
+		x += dx_;
+		y += dy_;
+	}
+	while ( board_[x][y] == 0 )
+	{
+		free1_++;
+		x += dx_;
+		y += dy_;
+		if ( free1_ + free2_ + n >= 5 ) break;
+	}
+	x = x_;
+	y = y_;
+	dx_ = -dx_;
+	dy_ = -dy_;
+	x += dx_;
+	y += dy_;
+	while ( board_[x][y] == c )
+	{
+		n++;
+		x += dx_;
+		y += dy_;
+	}
+	while ( board_[x][y] == 0 )
+	{
+		free2_++;
+		x += dx_;
+		y += dy_;
+		if ( free1_ + free2_ + n >= 5 ) break;
+	}
+	return n;
+}
+
+class Gomoku : public Fl_Double_Window
 {
 typedef Fl_Double_Window Inherited;
 public:
-	Board() :
+	Gomoku() :
 		Inherited( 600, 600, "FLTK Gomoku" ),
 		_G( 18 ),
 		_player( true ),
@@ -187,7 +241,7 @@ public:
 	}
 	static void cb_move( void *d_ )
 	{
-		(static_cast<Board *>(d_))->pondering( false );
+		(static_cast<Gomoku *>(d_))->pondering( false );
 	}
 	bool randomMove( int& x_, int& y_ )
 	{
@@ -226,7 +280,7 @@ public:
 		Fl::add_timeout( 1.0, cb_move, this );
 		_last_x = 0;
 		_last_y = 0;
-		if ( !winningMove( _last_x, _last_y ) && !defensiveMove( _last_x, _last_y ) )
+		if ( !eval( _last_x, _last_y ) )
 		{
 			randomMove( _last_x, _last_y );
 			cout << "randomMove at " << _last_x << "/" << _last_y << endl;
@@ -240,222 +294,118 @@ public:
 	}
 	int count( int x_, int y_,  int dx_, int dy_, int& free1_, int& free2_ ) const
 	{
-		free1_ = 0;
-		free2_ = 0;
-		int c = _board[x_][y_];
-		if ( c <= 0 )
-			return 0;
-		int n( 1 );
-		int x( x_ );
-		int y( y_ );
-		x += dx_;
-		y += dy_;
-		while ( _board[x][y] == c )
-		{
-			n++;
-			x += dx_;
-			y += dy_;
-		}
-		while ( _board[x][y] == 0 )
-		{
-			free1_++;
-			x += dx_;
-			y += dy_;
-			if ( free1_ + free2_ + n >= 5 ) break;
-		}
-		x = x_;
-		y = y_;
-		dx_ = -dx_;
-		dy_ = -dy_;
-		x += dx_;
-		y += dy_;
-		while ( _board[x][y] == c )
-		{
-			n++;
-			x += dx_;
-			y += dy_;
-		}
-		while ( _board[x][y] == 0 )
-		{
-			free2_++;
-			x += dx_;
-			y += dy_;
-			if ( free1_ + free2_ + n >= 5 ) break;
-		}
-		return n;
+		return ::count( x_, y_, dx_, dy_, free1_, free2_, _board );
 	}
-	int countX( int x_, int y_ ) const
+	void countPos( int x_, int y_, Eval& pos_, const Board& board_ ) const
 	{
-		int f1, f2;
-		return count( x_, y_, 1, 0, f1, f2 );
-	}
-	int countY( int x_, int y_ ) const
-	{
-		int f1, f2;
-		return count( x_, y_, 0, 1, f1, f2 );
-	}
-	int countXYLeft( int x_, int y_ ) const
-	{
-		int f1, f2;
-		return count( x_, y_, -1, -1, f1, f2 );
-	}
-	int countXYRight( int x_, int y_ ) const
-	{
-		int f1, f2;
-		return count( x_, y_, 1, -1, f1, f2 );
+		pos_.info[1].n = ::count( x_, y_,  1,  0, pos_.info[1].f1, pos_.info[1].f2, board_ );
+		pos_.info[2].n = ::count( x_, y_,  0,  1, pos_.info[2].f1, pos_.info[2].f2, board_ );
+		pos_.info[3].n = ::count( x_, y_, -1, -1, pos_.info[3].f1, pos_.info[3].f2, board_ );
+		pos_.info[4].n = ::count( x_, y_,  1, -1, pos_.info[4].f1, pos_.info[4].f2, board_ );
 	}
 	void countPos( int x_, int y_, Eval& pos_ ) const
 	{
-		pos_.info[1].n = count( x_, y_,  1,  0, pos_.info[1].f1, pos_.info[1].f2 );
-		pos_.info[2].n = count( x_, y_,  0,  1, pos_.info[2].f1, pos_.info[2].f2 );
-		pos_.info[3].n = count( x_, y_, -1, -1, pos_.info[3].f1, pos_.info[3].f2 );
-		pos_.info[4].n = count( x_, y_,  1, -1, pos_.info[4].f1, pos_.info[4].f2 );
+		countPos( x_, y_, pos_, _board );
 	}
 	bool checkLine( int x_, int y_, int n_ ) const
 	{
-		int n = countX( x_, y_ );
-		if ( n != n_ )
-			n = countY( x_, y_ );
-		if ( n != n_ )
-			n = countXYLeft( x_, y_ );
-		if ( n != n_ )
-			n = countXYRight( x_, y_ );
-		return n == n_;
+		Eval e;
+		countPos( x_, y_, e );
+		return e.wins();
 	}
 	void onResized()
 	{
 		size( xp( _G + 2 ), yp( _G + 2 ) );
 	}
-	bool tryWin( int x_, int y_, int who_ = COMPUTER )
+	bool eval( int& x_, int& y_ )
 	{
-		if ( _board[x_][y_] != 0 )
-			return false;
-		_board[x_][y_] = who_;
-		bool win = checkLine( x_, y_, 5 );
-		_board[x_][y_] = 0;
-		return win;
-	}
-	bool try4( int x_, int y_, int who_ = COMPUTER )
-	{
-		if ( _board[x_][y_] != 0 )
-			return false;
-		_board[x_][y_] = who_;
-		Eval& p = _eval[ x_ ][ y_ ];
-		p.init();
-		countPos( x_, y_, p );
-		_board[x_][y_] = 0;
-		return p.has4();
-	}
-	bool try3( int x_, int y_, int who_ = COMPUTER )
-	{
-		if ( _board[x_][y_] != 0 )
-			return false;
-		_board[x_][y_] = who_;
-		Eval& p = _eval[ x_ ][ y_ ];
-		p.init();
-		countPos( x_, y_, p );
-		_board[x_][y_] = 0;
-		return p.has3();
-	}
-	bool eval( int x_, int y_, int who_ = COMPUTER )
-	{
-		if ( _board[x_][y_] != 0 )
-			return false;
-		_board[x_][y_] = who_;
-		Eval& p = _eval[ x_ ][ y_ ];
-		p.init();
-		countPos( x_, y_, p );
-		_board[x_][y_] = 0;
-		return p.has3Fork();
-	}
-	bool winningMove( int& x_, int& y_ )
-	{
-		for ( int x = 1; x <= _G + 1; x++ )
-			for ( int y = 1; y <= _G + 1; y++ )
-				if ( tryWin( x, y ) )
-				{
-					cout << "winnungMove tryWin at " << x << "/" << y << endl;
-					x_ = x;
-					y_ = y;
-					return true;
-				}
-		for ( int x = 1; x <= _G + 1; x++ )
-			for ( int y = 1; y <= _G + 1; y++ )
-				if ( tryWin( x, y, PLAYER ) )
-				{
-					cout << "winnungMove tryWin PLAYER at " << x << "/" << y << endl;
-					x_ = x;
-					y_ = y;
-					return true;
-				}
-
-		for ( int x = 1; x <= _G + 1; x++ )
-			for ( int y = 1; y <= _G + 1; y++ )
-				if ( try4( x, y ) )
-				{
-					x_ = x;
-					y_ = y;
-					cout << "winnungMove try4 at " << x << "/" << y << endl;
-					return true;
-				}
-		for ( int x = 1; x <= _G + 1; x++ )
-			for ( int y = 1; y <= _G + 1; y++ )
-				if ( try4( x, y, PLAYER ) )
-				{
-					cout << "winnungMove try4 PLAYER at " << x << "/" << y << endl;
-					x_ = x;
-					y_ = y;
-					return true;
-				}
-
-		// test 3-fork
+		Board board;
+		memcpy( &board, &_board, sizeof( board ) );
 		for ( int x = 1; x <= _G + 1; x++ )
 		{
 			for ( int y = 1; y <= _G + 1; y++ )
 			{
-				if ( eval( x, y ) )
+				if ( board[x][y] == 0 )
 				{
-					cout << "winnungMove eval at " << x << "/" << y << endl;
-					x_ = x;
-					y_ = y;
-					return true;
+					board[x][y] = COMPUTER;
+					Eval ec;
+					countPos( x, y, ec, board );
+					if ( ec.wins() )
+					{
+						cout << "winnungMove COMPUTER wins at " << x << "/" << y << endl;
+						x_ = x;
+						y_ = y;
+						return true;
+					}
+
+					board[x][y] = PLAYER;
+					Eval ep;
+					countPos( x, y, ep, board );
+					board[x][y] = 0;
+					if ( ep.wins() )
+					{
+						cout << "winnungMove PLAYER wins at " << x << "/" << y << endl;
+						x_ = x;
+						y_ = y;
+						return true;
+					}
+
+					if ( ec.has4() )
+					{
+						x_ = x;
+						y_ = y;
+						cout << "winnungMove has4 COMPUTER at " << x << "/" << y << endl;
+						return true;
+					}
+
+					if ( ep.has4() )
+					{
+						x_ = x;
+						y_ = y;
+						cout << "winnungMove has4 PLAYER at " << x << "/" << y << endl;
+						return true;
+					}
+
+					if ( ec.has3Fork() )
+					{
+						x_ = x;
+						y_ = y;
+						cout << "winnungMove has3Fork COMPUTER at " << x << "/" << y << endl;
+						return true;
+					}
+
+					if ( ep.has3Fork() )
+					{
+						x_ = x;
+						y_ = y;
+						cout << "winnungMove has3Fork PLAYER at " << x << "/" << y << endl;
+						return true;
+					}
+
+					if ( ec.has3() )
+					{
+						x_ = x;
+						y_ = y;
+						cout << "winnungMove has3 COMPUTER at " << x << "/" << y << endl;
+						return true;
+					}
+
+					if ( ep.has3() )
+					{
+						x_ = x;
+						y_ = y;
+						cout << "winnungMove has3 PLAYER at " << x << "/" << y << endl;
+						return true;
+					}
 				}
 			}
 		}
-
-		for ( int x = 1; x <= _G + 1; x++ )
-		{
-			for ( int y = 1; y <= _G + 1; y++ )
-			{
-				if ( eval( x, y, PLAYER ) )
-				{
-					cout << "winnungMove eval PLAYER at " << x << "/" << y << endl;
-					x_ = x;
-					y_ = y;
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-	bool defensiveMove( int& x_, int& y_ )
-	{
-		for ( int x = 1; x <= _G + 1; x++ )
-			for ( int y = 1; y <= _G + 1; y++ )
-				if ( try3( x, y, PLAYER ) )
-				{
-					cout << "defensiveMove try3 at " << x << "/" << y << endl;
-					x_ = x;
-					y_ = y;
-					return true;
-				}
 
 		return false;
 	}
 	static void cb_resized( void *d_ )
 	{
-		static_cast<Board *>( d_ )->onResized();
+		static_cast<Gomoku *>( d_ )->onResized();
 	}
 	virtual void resize( int x_, int y_, int w_, int h_ )
 	{
@@ -509,7 +459,7 @@ public:
 	}
 	static void cb_delay( void *d_ )
 	{
-		static_cast<Board *>( d_ )->onDelay();
+		static_cast<Gomoku *>( d_ )->onDelay();
 	}
 	void wait( double delay_ )
 	{
@@ -595,7 +545,7 @@ private:
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 private:
 	int _G;
-	char _board[24][24];
+	Board _board;
 	Eval _eval[24][24];
 	bool _player;
 	bool _pondering;
@@ -614,7 +564,7 @@ int main()
 	Fl::scheme( "gtk+" );
 	Fl::get_system_colors();
 	srand( time( 0 ) );
-	Board g;
+	Gomoku g;
 	g.show();
 	return Fl::run();
 }
