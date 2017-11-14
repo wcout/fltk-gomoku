@@ -1,5 +1,21 @@
 /*
-	FLTK Gomoku (c) 2017
+ FLTK Gomoku.
+
+ (c) 2017 wcout wcout<gmx.net>
+
+ A minimal implementation of the "5 in a row" game.
+
+ This code is free software: you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by
+ the Free Software Foundation,  either version 3 of the License, or
+ (at your option) any later version.
+
+ This code is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY;  without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ See the GNU General Public License for more details:
+ http://www.gnu.org/licenses/.
+
 */
 #include <config.h>
 //#undef FLTK_USE_NANOSVG
@@ -230,7 +246,7 @@ typedef Fl_Double_Window Inherited;
 		fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 #endif
 		// highlight
-		bool winning_piece = checkLine( x_, y_, 5 );
+		bool winning_piece = checkWin( x_, y_ );
 		fl_color( FL_DARK_GRAY );
 		fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
 		if ( _last_x == x_ && _last_y == y_ )
@@ -261,7 +277,7 @@ typedef Fl_Double_Window Inherited;
 	}
 	bool randomMove( int& x_, int& y_ )
 	{
-		vector<Pos> move;
+		vector<Pos> moves;
 		int r( 0 );
 		for ( int x = 1; x <= _G + 1; x++ )
 		{
@@ -272,21 +288,21 @@ typedef Fl_Double_Window Inherited;
 					if ( x > _G / 3 && x < _G - _G / 3 &&
 					     y > _G / 3 && y < _G - _G / 3 )
 					{
-						move.insert( move.begin(), Pos( x, y ) );
+						moves.insert( moves.begin(), Pos( x, y ) );
 						r++;
 					}
 					else
-						move.push_back( Pos( x, y ) );
+						moves.push_back( Pos( x, y ) );
 				}
 			}
 		}
-		if ( move.empty() )
+		if ( moves.empty() )
 			return false;
 		if ( !r )
-			r = move.size();
+			r = moves.size();
 		r = random() % r;
-		x_ = move[r].x;
-		y_ = move[r].y;
+		x_ = moves[r].x;
+		y_ = moves[r].y;
 		return true;
 	}
 	void makeMove()
@@ -324,7 +340,7 @@ typedef Fl_Double_Window Inherited;
 	{
 		countPos( x_, y_, pos_, _board );
 	}
-	bool checkLine( int x_, int y_, int n_ ) const
+	bool checkWin( int x_, int y_ ) const
 	{
 		Eval e;
 		countPos( x_, y_, e );
@@ -477,7 +493,7 @@ typedef Fl_Double_Window Inherited;
 			int x, y;
 			adraw = !randomMove( x, y );
 		}
-		if ( adraw || checkLine( x_, y_, 5 ) )
+		if ( adraw || checkWin( x_, y_ ) )
 		{
 			_games++;
 			bool player = _board[x_][y_] == PLAYER;
@@ -608,9 +624,15 @@ private:
 
 		// draw pieces
 		for ( int x = 1; x <= _G + 1; x++ )
+		{
 			for ( int y = 1; y <= _G + 1; y++ )
+			{
 				if ( _board[x][y] )
+				{
 					drawPiece( _board[x][y], x, y );
+				}
+			}
+		}
 	}
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 private:
