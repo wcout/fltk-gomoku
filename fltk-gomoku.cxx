@@ -21,11 +21,14 @@
 //#undef FLTK_USE_NANOSVG
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Box.H>
 #ifdef FLTK_USE_NANOSVG
 #include <FL/Fl_SVG_Image.H>
 #endif
 #include <FL/Fl_Preferences.H>
 #include <FL/Fl_Image_Surface.H>
+#include <FL/Fl_Shared_Image.H>
+#include <FL/Fl_Tiled_Image.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <vector>
@@ -170,6 +173,12 @@ typedef Fl_Double_Window Inherited;
 		_computer_wins( 0 ),
 		_debug( false )
 	{
+		Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
+		bg->box( FL_FLAT_BOX );
+		Fl_Image *bg_tile = Fl_Shared_Image::get( "bg.gif" );
+		if ( bg_tile && bg_tile->w() > 0 && bg_tile->h() >  0 )
+			bg->image( new Fl_Tiled_Image( bg_tile ) );
+		end();
 		int W, X, Y;
 		_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
 		_cfg->get( "games", _games, 0 );
@@ -349,6 +358,7 @@ typedef Fl_Double_Window Inherited;
 	void onResized()
 	{
 		size( xp( _G + 2 ), yp( _G + 2 ) );
+		child(0)->size( w(), h() );
 	}
 	bool findMove( int& x_, int& y_ )
 	{
@@ -571,11 +581,13 @@ typedef Fl_Double_Window Inherited;
 #endif
 		return Inherited::handle( e_ );
 	}
-	void drawBoard()
+	void drawBoard( bool bg_ = false )
 	{
-		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
-		fl_rectf( 0, 0, xp( _G + 2 ), yp( _G + 2 ), BOARD_COLOR );
-
+		if ( bg_ )
+		{
+			fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
+			fl_rectf( 0, 0, xp( _G + 2 ), yp( _G + 2 ), BOARD_COLOR );
+		}
 		// draw grid
 		fl_rect( 0, 0, xp(_G+2), yp(_G+2), BOARD_GRID_COLOR );
 		for ( int x = 0; x <= _G; x++ )
@@ -604,7 +616,7 @@ typedef Fl_Double_Window Inherited;
 	{
 		Fl_Image_Surface *rgb_surf = new Fl_Image_Surface( w(), h(), 1 );
 		Fl_Surface_Device::push_current( rgb_surf );
-		drawBoard();
+		drawBoard( true );
 		Fl_RGB_Image *icon_image = rgb_surf->image();
 		delete rgb_surf;
 		Fl_Surface_Device::pop_current();
@@ -619,6 +631,8 @@ typedef Fl_Double_Window Inherited;
 private:
 	virtual void draw()
 	{
+		Inherited::draw();
+
 		// draw board
 		drawBoard();
 
@@ -657,6 +671,7 @@ int main( int argc_, char *argv_[] )
 {
 	Fl::scheme( "gtk+" );
 	Fl::get_system_colors();
+	fl_register_images();
 	srand( time( 0 ) );
 	Gomoku g;
 	g.show( argc_, argv_ );
