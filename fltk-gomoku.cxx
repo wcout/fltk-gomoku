@@ -85,8 +85,9 @@ struct Pos
 	{}
 };
 
-static int count( int x_, int y_,  int dx_, int dy_, int& free1_, int& free2_,
-           const Board& board_ )
+static int count( int x_, int y_,  int dx_, int dy_,
+                  int& free1_, int& free2_,
+                  const Board& board_ )
 {
 	free1_ = 0;
 	free2_ = 0;
@@ -197,15 +198,15 @@ public:
 		}
 		Fl_SVG_Image *piece = color_ == 1 ? white_piece : black_piece;
 		piece->resize( rw, rh );
-		piece->draw( x - rw/2, y - rh/2 );
+		piece->draw( x - rw / 2, y - rh / 2 );
 #else
 		// white or black piece
 		fl_color( color_ == 1 ? FL_WHITE : FL_BLACK );
-		fl_pie( x - rw/2, y - rh/2, rw, rh, 0, 360 );
+		fl_pie( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 
 		// outline
 		fl_color( FL_GRAY );
-		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
+		fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 #endif
 		// highlight
 		bool winning_piece = checkLine( x_, y_, 5 );
@@ -223,9 +224,9 @@ public:
 #endif
 		}
 #ifdef FLTK_USE_NANOSVG
-		fl_arc( x - rw/2, y - rh/2, rw, rh, 0, 360 );
+		fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 #else
-		fl_arc( x - rw/2 + 1, y - rh/2 + 1, rw - 2, rh - 2, 0, 360 );
+		fl_arc( x - rw / 2 + 1, y - rh / 2 + 1, rw - 2, rh - 2, 0, 360 );
 #endif
 		fl_line_style( 0, 0 );
 	}
@@ -538,31 +539,30 @@ private:
 	{
 		// draw board
 		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
-//		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), FL_LIGHT_YELLOW );
-		fl_rectf( 0, 0, xp(_G+2), yp(_G+2), BOARD_COLOR );
+		fl_rectf( 0, 0, xp( _G + 2 ), yp( _G + 2 ), BOARD_COLOR );
 
 		// draw grid
 		fl_rect( 0, 0, xp(_G+2), yp(_G+2), BOARD_GRID_COLOR );
 		for ( int x = 0; x <= _G; x++ )
-			fl_line( xp(x + 1 ), yp( 1 ), xp( x + 1 ), yp( 1  + _G ) );
+			fl_line( xp( x + 1 ), yp( 1 ), xp( x + 1 ), yp( 1  + _G ) );
 
 		for ( int y = 0; y <= _G; y++ )
-			fl_line( xp( 1 ), yp( y + 1), xp( 1 + _G ), yp( y + 1 ) );
+			fl_line( xp( 1 ), yp( y + 1 ), xp( 1 + _G ), yp( y + 1 ) );
 
 		// draw center
 		if ( xp( 1 ) > 8 )
 		{
 			int r = ceil( (double)xp( 1 ) / 12 );
 			fl_color( FL_BLACK );
-			fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1), r );
-			fl_circle( xp( _G / 4 + 1 ), yp( _G / 4 + 1), r );
-			fl_circle( xp( _G / 4 + 1 ), yp( _G / 2 + 1), r );
-			fl_circle( xp( _G / 2 + 1 ), yp( _G / 4 + 1), r );
-			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 4 + 1), r );
-			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 2 + 1), r );
-			fl_circle( xp(  _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
-			fl_circle( xp(  _G / 2 + 1 ), yp( _G - _G / 4 + 1), r );
-			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1), r );
+			fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1 ), r );
+			fl_circle( xp( _G / 4 + 1 ), yp( _G / 4 + 1 ), r );
+			fl_circle( xp( _G / 4 + 1 ), yp( _G / 2 + 1 ), r );
+			fl_circle( xp( _G / 2 + 1 ), yp( _G / 4 + 1 ), r );
+			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 4 + 1 ), r );
+			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 2 + 1 ), r );
+			fl_circle( xp( _G / 4 + 1 ), yp( _G - _G / 4 + 1 ), r );
+			fl_circle( xp( _G / 2 + 1 ), yp( _G - _G / 4 + 1 ), r );
+			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1 ), r );
 		}
 
 		// draw pieces
