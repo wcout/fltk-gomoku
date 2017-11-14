@@ -27,15 +27,6 @@ static const Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 static const char PLAYER = 1;
 static const char COMPUTER = 2;
 
-
-enum Direction
-{
-	Horizontal = 1,
-	Vertical = 2,
-	TopLeftBottomRight = 3,
-	TopRightBottomLeft = 4
-};
-
 struct PosInfo
 {
 	int n;
@@ -163,7 +154,6 @@ public:
 		fl_message_title_default( label() );
 		clearBoard();
 		resizable( this );
-		_debug = true; // temp!!
 	}
 	void clearBoard()
 	{
@@ -514,7 +504,7 @@ public:
 			setPiece( x, y, PLAYER );
 			return 1;
 		}
-		if ( e_ == FL_KEYDOWN && _player && Fl::event_key( FL_BackSpace ) )
+		else if ( e_ == FL_KEYDOWN && _player && Fl::event_key( FL_BackSpace ) )
 		{
 			if ( _history.size() >= 2 )
 			{
@@ -528,8 +518,13 @@ public:
 				redraw();
 			}
 		}
+		else if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
+		{
+			_debug = !_debug;
+			cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
+		}
 #if 1
-		if ( e_ == FL_MOVE && _player )
+		else if ( e_ == FL_MOVE && _player )
 		{
 			_last_x = 0;
 			_last_y = 0;
