@@ -9,6 +9,7 @@
 #include <FL/Fl_SVG_Image.H>
 #endif
 #include <FL/Fl_Preferences.H>
+#include <FL/Fl_Image_Surface.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <vector>
@@ -21,8 +22,8 @@
 using namespace std;
 
 static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
-static const Fl_Color FL_LIGHT_YELLOW = fl_lighter( FL_YELLOW );
-static const Fl_Color FL_BROWN = fl_rgb_color( 0x67, 0x4d, 0x0f );
+//static const Fl_Color FL_LIGHT_YELLOW = fl_lighter( FL_YELLOW );
+//static const Fl_Color FL_BROWN = fl_rgb_color( 0x67, 0x4d, 0x0f );
 static const Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
 static const Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 static const char PLAYER = 1;
@@ -165,6 +166,7 @@ typedef Fl_Double_Window Inherited;
 		clearBoard();
 		resizable( this );
 		resize( X, Y, W, W );
+		setIcon();
 	}
 	~Gomoku()
 	{
@@ -193,7 +195,7 @@ typedef Fl_Double_Window Inherited;
 		int W = w() < h() ? w() : h();
 		return W / ( _G + 2 ) * y_;
 	}
-	void draw_piece( int color_, int x_, int y_ ) const
+	void drawPiece( int color_, int x_, int y_ ) const
 	{
 #ifdef FLTK_USE_NANOSVG
 		#include "go_w_svg.h"
@@ -553,10 +555,8 @@ typedef Fl_Double_Window Inherited;
 #endif
 		return Inherited::handle( e_ );
 	}
-private:
-	virtual void draw()
+	void drawBoard()
 	{
-		// draw board
 		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
 		fl_rectf( 0, 0, xp( _G + 2 ), yp( _G + 2 ), BOARD_COLOR );
 
@@ -583,12 +583,34 @@ private:
 			fl_circle( xp( _G / 2 + 1 ), yp( _G - _G / 4 + 1 ), r );
 			fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1 ), r );
 		}
+	}
+	void setIcon()
+	{
+		Fl_Image_Surface *rgb_surf = new Fl_Image_Surface( w(), h(), 1 );
+		Fl_Surface_Device::push_current( rgb_surf );
+		drawBoard();
+		Fl_RGB_Image *icon_image = rgb_surf->image();
+		delete rgb_surf;
+		Fl_Surface_Device::pop_current();
+		if ( icon_image )
+		{
+			Fl_RGB_Image *icon = (Fl_RGB_Image *)icon_image->copy( 32, 32 );
+			this->icon( icon );
+			delete icon;
+		}
+		delete icon_image;
+	}
+private:
+	virtual void draw()
+	{
+		// draw board
+		drawBoard();
 
 		// draw pieces
 		for ( int x = 1; x <= _G + 1; x++ )
 			for ( int y = 1; y <= _G + 1; y++ )
 				if ( _board[x][y] )
-					draw_piece( _board[x][y], x, y );
+					drawPiece( _board[x][y], x, y );
 	}
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 private:
