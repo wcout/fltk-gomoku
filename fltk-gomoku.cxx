@@ -58,6 +58,14 @@ struct Eval
 {
 	PosInfo info[4 + 1];
 	void init() { for ( int i = 1; i <= 4; i++ ) info[i].init(); }
+	bool has4() const
+	{
+		return info[1].has4() || info[2].has4() || info[3].has4() || info[4].has4();
+	}
+	bool has3() const
+	{
+		return info[1].has3() || info[2].has3() || info[3].has3() || info[4].has3();
+	}
 	bool has3Fork() const
 	{
 		return ( ( info[1].has3() || info[1].has4() ) +
@@ -299,9 +307,9 @@ public:
 	void countPos( int x_, int y_, Eval& pos_ ) const
 	{
 		pos_.info[1].n = count( x_, y_,  1,  0, pos_.info[1].f1, pos_.info[1].f2 );
-		pos_.info[2].n = count( x_, y_,  1,  1, pos_.info[2].f1, pos_.info[2].f2 );
+		pos_.info[2].n = count( x_, y_,  0,  1, pos_.info[2].f1, pos_.info[2].f2 );
 		pos_.info[3].n = count( x_, y_, -1, -1, pos_.info[3].f1, pos_.info[3].f2 );
-		pos_.info[4].n = count( x_, y_,  1, -1, pos_.info[4].f1, pos_.info[5].f2 );
+		pos_.info[4].n = count( x_, y_,  1, -1, pos_.info[4].f1, pos_.info[4].f2 );
 	}
 	bool checkLine( int x_, int y_, int n_ ) const
 	{
@@ -332,18 +340,22 @@ public:
 		if ( _board[x_][y_] != 0 )
 			return false;
 		_board[x_][y_] = who_;
-		bool win = checkLine( x_, y_, 4 );
+		Eval& p = _eval[ x_ ][ y_ ];
+		p.init();
+		countPos( x_, y_, p );
 		_board[x_][y_] = 0;
-		return win;
+		return p.has4();
 	}
 	bool try3( int x_, int y_, int who_ = COMPUTER )
 	{
 		if ( _board[x_][y_] != 0 )
 			return false;
 		_board[x_][y_] = who_;
-		bool win = checkLine( x_, y_, 3 );
+		Eval& p = _eval[ x_ ][ y_ ];
+		p.init();
+		countPos( x_, y_, p );
 		_board[x_][y_] = 0;
-		return win;
+		return p.has3();
 	}
 	bool eval( int x_, int y_, int who_ = COMPUTER )
 	{
