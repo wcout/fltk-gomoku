@@ -157,11 +157,13 @@ public:
 		_games( 0 ),
 		_moves( 0 ),
 		_player_wins( 0 ),
-		_computer_wins( 0 )
+		_computer_wins( 0 ),
+		_debug( false )
 	{
 		fl_message_title_default( label() );
 		clearBoard();
 		resizable( this );
+		_debug = true; // temp!!
 	}
 	void clearBoard()
 	{
@@ -285,7 +287,8 @@ public:
 		if ( !findMove( _last_x, _last_y ) )
 		{
 			randomMove( _last_x, _last_y );
-			cout << "randomMove at " << _last_x << "/" << _last_y << endl;
+			if ( _debug )
+				cout << "randomMove at " << _last_x << "/" << _last_y << endl;
 		}
 		while ( _pondering )
 			Fl::check();
@@ -334,22 +337,31 @@ public:
 				}
 			}
 		}
-		cout << moves.size() << " moves evaluated" << endl;
+		if ( _debug )
+			cout << moves.size() << " moves evaluated" << endl;
 		if ( moves.empty() )
 			return false;
 
 		int max_value = 0;
-		size_t max_pos = 0;
+		vector<Pos> equal;
 		for ( size_t i = 0; i < moves.size(); i++ )
 		{
 			if ( moves[i].value > max_value )
 			{
+				equal.clear();
 				max_value = moves[i].value;
-				max_pos = i;
+				equal.push_back( moves[i] );
+			}
+			else if ( moves[i].value == max_value )
+			{
+				equal.push_back( moves[i] );
 			}
 		}
-		x_ = moves[max_pos].x;
-		y_ = moves[max_pos].y;
+		if ( _debug )
+			cout << equal.size() << " moves with value " << max_value << endl;
+		int move = random() % equal.size();
+		x_ = equal[move].x;
+		y_ = equal[move].y;
 		return true;
 	}
 
@@ -363,7 +375,8 @@ public:
 		countPos( x, y, ec, board );
 		if ( ec.wins() )
 		{
-			cout << "winnungMove COMPUTER wins at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval COMPUTER wins at " << x << "/" << y << endl;
 			return 10000;
 		}
 
@@ -373,43 +386,50 @@ public:
 		board[x][y] = 0;
 		if ( ep.wins() )
 		{
-			cout << "winnungMove PLAYER wins at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval PLAYER wins at " << x << "/" << y << endl;
 			return 9000;
 		}
 
 		if ( ec.has4() )
 		{
-			cout << "winnungMove has4 COMPUTER at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval has4 COMPUTER at " << x << "/" << y << endl;
 			return 8000;
 		}
 
 		if ( ep.has4() )
 		{
-			cout << "winnungMove has4 PLAYER at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval has4 PLAYER at " << x << "/" << y << endl;
 			return 7000;
 		}
 
 		if ( ec.has3Fork() )
 		{
-			cout << "winnungMove has3Fork COMPUTER at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval has3Fork COMPUTER at " << x << "/" << y << endl;
 			return 6000;
 		}
 
 		if ( ep.has3Fork() )
 		{
-			cout << "winnungMove has3Fork PLAYER at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval has3Fork PLAYER at " << x << "/" << y << endl;
 			return 5000;
 		}
 
 		if ( ec.has3() )
 		{
-			cout << "winnungMove has3 COMPUTER at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval has3 COMPUTER at " << x << "/" << y << endl;
 			return 4000;
 		}
 
 		if ( ep.has3() )
 		{
-			cout << "winnungMove has3 PLAYER at " << x << "/" << y << endl;
+			if ( _debug )
+				cout << "eval has3 PLAYER at " << x << "/" << y << endl;
 			return 3000;
 		}
 
@@ -569,14 +589,15 @@ private:
 	int _player_wins;
 	int _computer_wins;
 	vector<Pos> _history;
+	bool _debug;
 };
 
-int main()
+int main( int argc_, char *argv_[] )
 {
 	Fl::scheme( "gtk+" );
 	Fl::get_system_colors();
 	srand( time( 0 ) );
 	Gomoku g;
-	g.show();
+	g.show( argc_, argv_ );
 	return Fl::run();
 }
