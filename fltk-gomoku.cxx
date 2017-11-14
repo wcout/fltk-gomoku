@@ -8,6 +8,7 @@
 #ifdef FLTK_USE_NANOSVG
 #include <FL/Fl_SVG_Image.H>
 #endif
+#include <FL/Fl_Preferences.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <vector>
@@ -136,8 +137,8 @@ static int count( int x_, int y_,  int dx_, int dy_,
 
 class Gomoku : public Fl_Double_Window
 {
-typedef Fl_Double_Window Inherited;
 public:
+typedef Fl_Double_Window Inherited;
 	Gomoku() :
 		Inherited( 600, 600, "FLTK Gomoku" ),
 		_G( 18 ),
@@ -152,9 +153,27 @@ public:
 		_computer_wins( 0 ),
 		_debug( false )
 	{
+		int W, X, Y;
+		_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
+		_cfg->get( "games", _games, 0 );
+		_cfg->get( "moves", _moves, 0 );
+		_cfg->get( "W", W, w() );
+		_cfg->get( "X", X, x() );
+		_cfg->get( "Y", Y, y() );
+
 		fl_message_title_default( label() );
 		clearBoard();
 		resizable( this );
+		resize( X, Y, W, W );
+	}
+	~Gomoku()
+	{
+		_cfg->set( "W", w() );
+		_cfg->set( "X", x() );
+		_cfg->set( "Y", y() );
+		_cfg->set( "games", _games );
+		_cfg->set( "moves", _moves );
+		_cfg->flush();
 	}
 	void clearBoard()
 	{
@@ -587,6 +606,7 @@ private:
 	int _computer_wins;
 	vector<Pos> _history;
 	bool _debug;
+	Fl_Preferences *_cfg;
 };
 
 int main( int argc_, char *argv_[] )
