@@ -170,33 +170,34 @@ static int count( int x_, int y_,  int dx_, int dy_,
 class Gomoku : public Fl_Double_Window
 //-------------------------------------------------------------------------------
 {
-public:
 	typedef Fl_Double_Window Inherited;
+public:
 	Gomoku();
 	~Gomoku();
 	void clearBoard();
+	void makeMove();
+	void setPiece( int x_, int y_, int who_ );
+	void wait( double delay_ );
+	virtual int handle( int e_ );
+	virtual void draw();
+protected:
+	void drawBoard( bool bg_ = false );
+	void drawPiece( int color_, int x_, int y_ ) const;
+	void setIcon();
+private:
 	int xp( int x_ ) const;
 	int yp( int y_ ) const;
-	void drawPiece( int color_, int x_, int y_ ) const;
 	void onMove();
 	static void cb_move( void *d_ );
-	bool randomMove( int &x_, int &y_ );
-	void makeMove();
 	int count( int x_, int y_,  int dx_, int dy_, int &free1_, int &free2_ ) const;
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
 	bool checkWin( int x_, int y_ ) const;
 	bool findMove( int &x_, int &y_ );
+	bool randomMove( int &x_, int &y_ );
 	int eval( int x, int y );
-	void setPiece( int x_, int y_, int who_ );
 	void onDelay();
 	static void cb_delay( void *d_ );
-	void wait( double delay_ );
-	int handle( int e_ );
-	void drawBoard( bool bg_ = false );
-	void setIcon();
-private:
-	virtual void draw();
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 private:
 	int _G;
@@ -629,6 +630,7 @@ void Gomoku::wait( double delay_ )
 	_waiting = false;
 }
 
+/*virtual */
 int Gomoku::handle( int e_ )
 //-------------------------------------------------------------------------------
 {
