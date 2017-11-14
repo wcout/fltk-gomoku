@@ -190,6 +190,8 @@ typedef Fl_Double_Window Inherited;
 		fl_message_title_default( label() );
 		clearBoard();
 		resizable( this );
+		size_range( ( _G + 2 ) * 10, ( _G + 2 ) * 10, 0, 0, ( _G + 2 ), ( _G + 2 ), 1 );
+
 		resize( X, Y, W, W );
 		setIcon();
 	}
@@ -355,11 +357,6 @@ typedef Fl_Double_Window Inherited;
 		countPos( x_, y_, e );
 		return e.wins();
 	}
-	void onResized()
-	{
-		size( xp( _G + 2 ), yp( _G + 2 ) );
-		child(0)->size( w(), h() );
-	}
 	bool findMove( int& x_, int& y_ )
 	{
 		vector<Pos> moves;
@@ -475,17 +472,6 @@ typedef Fl_Double_Window Inherited;
 
 		return value;
 	}
-	static void cb_resized( void *d_ )
-	{
-		static_cast<Gomoku *>( d_ )->onResized();
-	}
-	virtual void resize( int x_, int y_, int w_, int h_ )
-	{
-		Fl::remove_timeout( cb_resized, this );
-		Inherited::resize( x_, y_, w_, h_ );
-		if ( w_ != h_ )
-			Fl::add_timeout( 0.2, cb_resized, this );
-	}
 	void setPiece( int x_, int y_, int who_ )
 	{
 		_moves++;
@@ -549,7 +535,8 @@ typedef Fl_Double_Window Inherited;
 		{
 			int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 			int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
-			setPiece( x, y, PLAYER );
+			if ( x >= 1 && x <= _G + 1 && y >= 1 && y <= _G + 1 )
+				setPiece( x, y, PLAYER );
 			return 1;
 		}
 		else if ( e_ == FL_KEYDOWN && _player && Fl::event_key( FL_BackSpace ) )
@@ -588,6 +575,7 @@ typedef Fl_Double_Window Inherited;
 			fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
 			fl_rectf( 0, 0, xp( _G + 2 ), yp( _G + 2 ), BOARD_COLOR );
 		}
+
 		// draw grid
 		fl_rect( 0, 0, xp(_G+2), yp(_G+2), BOARD_GRID_COLOR );
 		for ( int x = 0; x <= _G; x++ )
@@ -631,10 +619,22 @@ typedef Fl_Double_Window Inherited;
 private:
 	virtual void draw()
 	{
-		Inherited::draw();
+		// FIXME: window sizes to full desktop when double click
+		//        on title bar (does not keep aspect), so we need
+		//        a background clip the bg image to board size.
+		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
+
+		bool bg = child(0)->image();
+		if ( bg )
+		{
+			int W = xp( _G + 2 );
+			fl_push_clip( 0, 0, W, W );
+			Inherited::draw();
+			fl_pop_clip();
+		}
 
 		// draw board
-		drawBoard();
+		drawBoard( !bg );
 
 		// draw pieces
 		for ( int x = 1; x <= _G + 1; x++ )
