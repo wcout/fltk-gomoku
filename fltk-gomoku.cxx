@@ -49,7 +49,7 @@ struct PosInfo
 	void init() { n = 0; f1 = 0; f2 = 0; }
 	bool has5() const { return n == 5; }
 	bool wins() const { return has5(); }
-	bool canWin() const { return n + f1 + f2 >= 5; }
+	bool canWin() const { return n + f1 + f2 >= 5 && ( f1 && f2 ); }
 	bool has4() const { return n == 4 && canWin(); }
 	bool has3() const { return n == 3 && canWin(); }
 };
@@ -370,6 +370,8 @@ public:
 		Board board;
 		memcpy( &board, &_board, sizeof( board ) );
 
+		int value = 0;
+
 		board[x][y] = COMPUTER;
 		Eval ec;
 		countPos( x, y, ec, board );
@@ -377,7 +379,7 @@ public:
 		{
 			if ( _debug )
 				cout << "eval COMPUTER wins at " << x << "/" << y << endl;
-			return 10000;
+			value += 10000;
 		}
 
 		board[x][y] = PLAYER;
@@ -388,52 +390,52 @@ public:
 		{
 			if ( _debug )
 				cout << "eval PLAYER wins at " << x << "/" << y << endl;
-			return 9000;
+			value += 9000;
 		}
 
 		if ( ec.has4() )
 		{
 			if ( _debug )
 				cout << "eval has4 COMPUTER at " << x << "/" << y << endl;
-			return 8000;
+			value += 8000;
 		}
 
 		if ( ep.has4() )
 		{
 			if ( _debug )
 				cout << "eval has4 PLAYER at " << x << "/" << y << endl;
-			return 7000;
+			value += 7000;
 		}
 
 		if ( ec.has3Fork() )
 		{
 			if ( _debug )
 				cout << "eval has3Fork COMPUTER at " << x << "/" << y << endl;
-			return 6000;
+			value += 2000;
 		}
 
 		if ( ep.has3Fork() )
 		{
 			if ( _debug )
 				cout << "eval has3Fork PLAYER at " << x << "/" << y << endl;
-			return 5000;
+			value += 1000;
 		}
 
 		if ( ec.has3() )
 		{
 			if ( _debug )
 				cout << "eval has3 COMPUTER at " << x << "/" << y << endl;
-			return 4000;
+			value += 500;
 		}
 
 		if ( ep.has3() )
 		{
 			if ( _debug )
 				cout << "eval has3 PLAYER at " << x << "/" << y << endl;
-			return 3000;
+			value += 400;
 		}
 
-		return 0;
+		return value;
 	}
 	static void cb_resized( void *d_ )
 	{
