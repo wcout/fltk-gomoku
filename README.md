@@ -4,6 +4,8 @@
 
 `v1.0  15/12/2017`
 
+![Screenshot of FLTK Gomoku](fltk-gomoku.png "Screenshot of FLTK Gomoku")
+
 Requires `FLTK 1.3` or above.
 
 Set pieces alternately (against the computer) on a
