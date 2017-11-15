@@ -256,6 +256,9 @@ Gomoku::Gomoku() :
 
 	resize( X, Y, W, W );
 	setIcon();
+	show();
+	if ( _player )
+		fl_cursor( FL_CURSOR_HAND );
 }
 
 Gomoku::~Gomoku()
@@ -583,25 +586,24 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 	}
 	if ( adraw || checkWin( x_, y_ ) )
 	{
+		// update game stats
 		_games++;
+		if ( !adraw )
+			who_ == PLAYER ? _player_wins++ : _computer_wins++;
 		_cfg->set( "games", _games );
 		_cfg->set( "moves", _moves );
 		_cfg->set( "player_wins", _player_wins );
 		_cfg->set( "computer_wins", _computer_wins );
 		_cfg->flush();
 
-		bool player = _board[x_][y_] == PLAYER;
-		if ( !adraw && player )
-			_player_wins++;
-		else if ( !adraw )
-			_computer_wins++;
 		ostringstream stat;
 		stat << endl << endl << _games << " games - " <<
 		_player_wins << " : " << _computer_wins <<
 		endl << endl << "( average moves: " << _moves / _games << ")";
 		wait( 0.5 );
+		fl_beep( FL_BEEP_MESSAGE );
 		fl_alert( adraw ? "No more moves!\n\nGame ends adraw.%s" :
-			player ? "You managed to win!%s" : "FLTK wins!%s", stat.str().c_str() );
+			who_ == PLAYER ? "You managed to win!%s" : "FLTK wins!%s", stat.str().c_str() );
 		clearBoard();
 		redraw();
 	}
@@ -609,6 +611,10 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 	if ( !_player )
 	{
 		makeMove();
+	}
+	else
+	{
+		fl_cursor( FL_CURSOR_HAND );
 	}
 } // setPiece
 
@@ -645,8 +651,10 @@ int Gomoku::handle( int e_ )
 	{
 		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 		int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
-		if ( x >= 1 && x <= _G + 1 && y >= 1 && y <= _G + 1 )
+		if ( x >= 1 && x <= _G + 1 && y >= 1 && y <= _G + 1 && _board[x][y] == 0 )
 			setPiece( x, y, PLAYER );
+		else
+			fl_beep( FL_BEEP_ERROR );
 		return 1;
 	}
 	else if ( e_ == FL_KEYDOWN && _player && Fl::event_key( FL_BackSpace ) )
@@ -775,6 +783,5 @@ int main( int argc_, char *argv_[] )
 	fl_register_images();
 	srand( time( 0 ) );
 	Gomoku g;
-	g.show( argc_, argv_ );
 	return Fl::run();
 }
