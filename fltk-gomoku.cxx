@@ -712,11 +712,10 @@ void Gomoku::setIcon()
 //-------------------------------------------------------------------------------
 {
 	Fl_Image_Surface *rgb_surf = new Fl_Image_Surface( w(), h(), 1 );
-	Fl_Surface_Device::push_current( rgb_surf );
+	rgb_surf->set_current();
 	drawBoard( true );
 	Fl_RGB_Image *icon_image = rgb_surf->image();
 	delete rgb_surf;
-	Fl_Surface_Device::pop_current();
 	if ( icon_image )
 	{
 		Fl_RGB_Image *icon = (Fl_RGB_Image *)icon_image->copy( 32, 32 );
@@ -724,6 +723,7 @@ void Gomoku::setIcon()
 		delete icon;
 	}
 	delete icon_image;
+	Fl_Display_Device::display_device()->set_current();
 }
 
 /*virtual*/
