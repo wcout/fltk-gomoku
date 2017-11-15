@@ -2,6 +2,8 @@
 
 *A minimal implementation of the "5 in a row" game.*
 
+`v1.0  15/12/2017`
+
 Requires `FLTK 1.3` or above.
 
 Set pieces alternately (against the computer) on a
@@ -20,5 +22,4 @@ background (tiled) image (if supplied as `bg.gif` in the
 current directory).
 
 Also it features pieces drawn from SVG images, so looking
-nice at all scales (Needs `FLTK 1.4`!).
-
+nice at all scales (needs `FLTK 1.4`!).
