@@ -218,7 +218,7 @@ private:
 };
 
 Gomoku::Gomoku() :
-	Inherited( 600, 600, "FLTK Gomoku" ),
+	Inherited( 600, 600, "FLTK Gomoku (\"5 in a row\")" ),
 	_G( 18 ),
 	_player( true ),
 	_pondering( false ),
@@ -261,8 +261,6 @@ Gomoku::~Gomoku()
 	_cfg->set( "W", w() );
 	_cfg->set( "X", x() );
 	_cfg->set( "Y", y() );
-	_cfg->set( "games", _games );
-	_cfg->set( "moves", _moves );
 	_cfg->flush();
 }
 
@@ -583,6 +581,10 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 	if ( adraw || checkWin( x_, y_ ) )
 	{
 		_games++;
+		_cfg->set( "games", _games );
+		_cfg->set( "moves", _moves );
+		_cfg->flush();
+
 		bool player = _board[x_][y_] == PLAYER;
 		if ( !adraw && player )
 			_player_wins++;
