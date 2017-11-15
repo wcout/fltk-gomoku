@@ -242,6 +242,9 @@ Gomoku::Gomoku() :
 	_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
 	_cfg->get( "games", _games, 0 );
 	_cfg->get( "moves", _moves, 0 );
+	_cfg->get( "player_wins", _player_wins, 0 );
+	_cfg->get( "computer_wins", _computer_wins, 0 );
+
 	_cfg->get( "W", W, w() );
 	_cfg->get( "X", X, x() );
 	_cfg->get( "Y", Y, y() );
@@ -583,6 +586,8 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		_games++;
 		_cfg->set( "games", _games );
 		_cfg->set( "moves", _moves );
+		_cfg->set( "player_wins", _player_wins );
+		_cfg->set( "computer_wins", _computer_wins );
 		_cfg->flush();
 
 		bool player = _board[x_][y_] == PLAYER;
