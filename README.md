@@ -2,7 +2,7 @@
 
 *A minimal implementation of the "5 in a row" game.*
 
-`v1.0  15/12/2017`
+`v1.0  15/11/2017`
 
 ![Screenshot of FLTK Gomoku (with custom background)](fltk-gomoku.png "Screenshot of FLTK Gomoku (with custom background)")
 
