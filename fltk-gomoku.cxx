@@ -513,7 +513,7 @@ int Gomoku::eval( int x, int y )
 	board[x][y] = PLAYER;
 	Eval ep;
 	countPos( x, y, ep, board );
-	board[x][y] = 0;
+
 	if ( ep.wins() )
 	{
 		if ( _debug )
