@@ -210,6 +210,7 @@ private:
 	int _moves;
 	int _player_wins;
 	int _computer_wins;
+	bool _wait_click;
 	vector<Pos> _history;
 	bool _debug;
 	Fl_Preferences *_cfg;
@@ -227,6 +228,7 @@ Gomoku::	Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_moves( 0 ),
 	_player_wins( 0 ),
 	_computer_wins( 0 ),
+	_wait_click( false ),
 	_debug( false )
 //-------------------------------------------------------------------------------
 {
@@ -607,6 +609,10 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		fl_beep( FL_BEEP_MESSAGE );
 		fl_alert( adraw ? "No more moves!\n\nGame ends adraw.%s" :
 			who_ == PLAYER ? "You managed to win!%s" : "FLTK wins!%s", stat.str().c_str() );
+		_wait_click = true;
+		cursor( FL_CURSOR_MOVE );
+		while ( _wait_click )
+			Fl::check();
 		clearBoard();
 		redraw();
 	}
@@ -650,6 +656,16 @@ void Gomoku::wait( double delay_ )
 int Gomoku::handle( int e_ )
 //-------------------------------------------------------------------------------
 {
+	if ( _wait_click )
+	{
+		if ( e_ == FL_PUSH || ( e_ == FL_KEYDOWN &&
+		     ( Fl::event_key( ' ' ) || Fl::event_key( FL_Escape ) ) ) )
+		{
+			_wait_click = false;
+			return 1;
+		}
+		return Inherited::handle( e_ );
+	}
 	if ( e_ == FL_PUSH && _player && Fl::event_button() == 1 )
 	{
 		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
