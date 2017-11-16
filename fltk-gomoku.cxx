@@ -170,7 +170,7 @@ class Gomoku : public Fl_Double_Window
 {
 	typedef Fl_Double_Window Inherited;
 public:
-	Gomoku();
+	Gomoku( int argc_ = 0, char *argv_[] = 0 );
 	~Gomoku();
 	void clearBoard();
 	void makeMove();
@@ -215,7 +215,7 @@ private:
 	Fl_Preferences *_cfg;
 };
 
-Gomoku::Gomoku() :
+Gomoku::	Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	Inherited( 600, 600, "FLTK Gomoku (\"5 in a row\")" ),
 	_G( 18 ),
 	_player( true ),
@@ -231,13 +231,18 @@ Gomoku::Gomoku() :
 //-------------------------------------------------------------------------------
 {
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
-	bg->box( FL_FLAT_BOX );
-	Fl_Image *bg_tile = Fl_Shared_Image::get( "bg.gif" );
-	if ( bg_tile && bg_tile->w() > 0 && bg_tile->h() >  0 )
-		bg->image( new Fl_Tiled_Image( bg_tile ) );
 	end();
-	int W, X, Y;
+	bg->box( FL_FLAT_BOX );
+
 	_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
+	char *bg_image;
+	_cfg->get( "bg_image", bg_image, argc_ > 1 ? argv_[1] : "bg.gif" );
+	Fl_Image *bg_tile = Fl_Shared_Image::get( bg_image );
+	if ( bg_tile && bg_tile->w() > 0 && bg_tile->h() > 0 )
+		bg->image( new Fl_Tiled_Image( bg_tile ) );
+	free( bg_image );
+
+	int W, X, Y;
 	_cfg->get( "games", _games, 0 );
 	_cfg->get( "moves", _moves, 0 );
 	_cfg->get( "player_wins", _player_wins, 0 );
@@ -780,6 +785,6 @@ int main( int argc_, char *argv_[] )
 	Fl::get_system_colors();
 	fl_register_images();
 	srand( time( 0 ) );
-	Gomoku g;
+	Gomoku g( argc_, argv_ );
 	return Fl::run();
 }
