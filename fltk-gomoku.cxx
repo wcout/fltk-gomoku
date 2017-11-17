@@ -656,6 +656,9 @@ void Gomoku::wait( double delay_ )
 int Gomoku::handle( int e_ )
 //-------------------------------------------------------------------------------
 {
+	if ( e_ == FL_HIDE ) // window closed, don't block exit!
+		_wait_click = false;
+
 	if ( _wait_click )
 	{
 		if ( e_ == FL_PUSH || ( e_ == FL_KEYDOWN &&
