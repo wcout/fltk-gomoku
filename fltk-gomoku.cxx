@@ -7,7 +7,7 @@
 
  This code is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License as published by
- the Free Software Foundation,  either version 3 of the License, or
+ the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
 
  This code is distributed in the hope that it will be useful, but
@@ -112,7 +112,7 @@ struct Pos
 	{}
 };
 
-static int count( int x_, int y_,  int dx_, int dy_,
+static int count( int x_, int y_, int dx_, int dy_,
 	int &free1_, int &free2_,
 	const Board &board_ )
 //-------------------------------------------------------------------------------
@@ -187,7 +187,7 @@ private:
 	int yp( int y_ ) const;
 	void onMove();
 	static void cb_move( void *d_ );
-	int count( int x_, int y_,  int dx_, int dy_, int &free1_, int &free2_ ) const;
+	int count( int x_, int y_, int dx_, int dy_, int &free1_, int &free2_ ) const;
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
 	bool checkWin( int x_, int y_ ) const;
@@ -216,7 +216,7 @@ private:
 	Fl_Preferences *_cfg;
 };
 
-Gomoku::	Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
+Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	Inherited( 600, 600, "FLTK Gomoku (\"5 in a row\")" ),
 	_G( 18 ),
 	_player( true ),
@@ -424,7 +424,7 @@ void Gomoku::makeMove()
 	onMove();
 }
 
-int Gomoku::count( int x_, int y_,  int dx_, int dy_, int &free1_, int &free2_ ) const
+int Gomoku::count( int x_, int y_, int dx_, int dy_, int &free1_, int &free2_ ) const
 //-------------------------------------------------------------------------------
 {
 	return ::count( x_, y_, dx_, dy_, free1_, free2_, _board );
