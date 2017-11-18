@@ -238,7 +238,9 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 
 	_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
 	char *bg_image;
-	_cfg->get( "bg_image", bg_image, argc_ > 1 ? argv_[1] : "bg.gif" );
+	_cfg->get( "bg_image", bg_image, "bg.gif" );
+	if ( argc_ > 1 )
+		bg_image = strdup( argv_[1] ); // overrule by cmd line arg
 	Fl_Image *bg_tile = Fl_Shared_Image::get( bg_image );
 	if ( bg_tile && bg_tile->w() > 0 && bg_tile->h() > 0 )
 		bg->image( new Fl_Tiled_Image( bg_tile ) );
