@@ -321,9 +321,7 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 	if ( !white_piece )
 		white_piece = new Fl_SVG_Image( NULL, Go_White_Piece );
 	if ( !black_piece )
-	{
 		black_piece = new Fl_SVG_Image( NULL, Go_Black_Piece );
-	}
 	Fl_SVG_Image *piece = color_ == 1 ? white_piece : black_piece;
 	piece->resize( rw, rh );
 	piece->draw( x - rw / 2, y - rh / 2 );
