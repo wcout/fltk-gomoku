@@ -212,8 +212,10 @@ private:
 	int _computer_wins;
 	bool _wait_click;
 	vector<Pos> _history;
-	bool _debug;
+	int _debug; // Note: using int instead of bool for signature of preferences
+	int _alert; // Nite: as above
 	Fl_Preferences *_cfg;
+	string _message;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -229,7 +231,8 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_player_wins( 0 ),
 	_computer_wins( 0 ),
 	_wait_click( false ),
-	_debug( false )
+	_debug( false ),
+	_alert( false )
 //-------------------------------------------------------------------------------
 {
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
@@ -255,6 +258,9 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_cfg->get( "W", W, w() );
 	_cfg->get( "X", X, x() );
 	_cfg->get( "Y", Y, y() );
+
+	_cfg->get( "debug", _debug, _debug );
+	_cfg->get( "alert", _alert, _alert );
 
 	fl_message_title_default( label() );
 	clearBoard();
@@ -599,6 +605,9 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		_board[ x_][ y_ ] = who_;
 		_last_x = x_;
 		_last_y = y_;
+		if ( _debug )
+			cout << "Move #" << _history.size() << ": " <<
+			        (char)( _last_y + 'A' - 1 ) << (char)( _last_x + 'a' - 1 ) << endl;
 		redraw();
 	}
 	if ( _player )
@@ -618,19 +627,35 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		_cfg->set( "computer_wins", _computer_wins );
 		_cfg->flush();
 
-		ostringstream stat;
-		stat << endl << endl << _games << " games - " <<
-		_player_wins << " : " << _computer_wins <<
-		endl << endl << "( average moves: " << _moves / _games << ")";
 		wait( 0.5 );
 		fl_beep( FL_BEEP_MESSAGE );
-		fl_alert( adraw ? "No more moves!\n\nGame ends adraw.%s" :
-			who_ == PLAYER ? "You managed to win!%s" : "FLTK wins!%s", stat.str().c_str() );
+
+		ostringstream stat;
+		stat << _games << " games - " <<
+		_player_wins << " : " << _computer_wins <<
+		endl << "(average moves: " << _moves / _games << ")";
+
+		ostringstream msg;
+		msg << ( adraw ? "No more moves!\n\nGame ends adraw." :
+		         who_ == PLAYER ? "You managed to win!" : "FLTK wins!" ) <<
+		         endl << endl << stat.str();
+		if ( _debug )
+			cout << msg.str() << endl;
+		if ( _alert )
+		{
+			fl_alert( "%s", msg.str().c_str() );
+		}
+		else
+		{
+			_message = msg.str();
+			redraw();
+		}
 		_wait_click = true;
 		cursor( FL_CURSOR_MOVE );
 		while ( _wait_click )
 			Fl::check();
 		clearBoard();
+		_message.erase();
 		redraw();
 	}
 	_player = !_player;
@@ -714,6 +739,7 @@ int Gomoku::handle( int e_ )
 	{
 		_debug = !_debug;
 		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
+		redraw();
 	}
 #if 1
 	else if ( e_ == FL_MOVE && _player )
@@ -762,6 +788,25 @@ void Gomoku::drawBoard( bool bg_/* = false*/ )
 		fl_circle( xp( _G / 2 + 1 ), yp( _G - _G / 4 + 1 ), r );
 		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1 ), r );
 	}
+
+	if ( _debug )
+	{
+		// draw labels
+		fl_font( FL_COURIER, xp( 1 ) / 3 );
+		for ( int x = 1; x <= _G + 1; x++ )
+		{
+			ostringstream os;
+			os << (char)('a' + x - 1);
+			fl_draw( os.str().c_str(), xp( x ) - xp( 1 ) / 8, yp( 0 ) + yp( 1 ) / 2 );
+		}
+		for ( int y = 1; y <= _G + 1; y++ )
+		{
+			ostringstream os;
+			os << (char)('A' + y - 1);
+			fl_draw( os.str().c_str(), xp( 0 ) + xp( 1 ) / 4, yp( y ) + yp( 1 ) / 8 );
+		}
+	}
+
 } // drawBoard
 
 void Gomoku::setIcon()
@@ -813,6 +858,18 @@ void Gomoku::draw()
 				drawPiece( _board[x][y], x, y );
 			}
 		}
+	}
+
+	// draw messages
+	if ( _message.size() )
+	{
+		fl_color( FL_DARK_GRAY );
+		fl_font( FL_HELVETICA|FL_BOLD, xp( 1 ) );
+		fl_draw( _message.c_str(), xp( 1 ) + 2, yp( 1 ) + 2, xp( 18 ), yp( 18 ),
+			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
+		fl_color( FL_YELLOW );
+		fl_draw( _message.c_str(), xp( 1 ) , yp( 1 ), xp( 18 ), yp( 18 ),
+			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 	}
 } // draw
 
