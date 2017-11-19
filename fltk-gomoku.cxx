@@ -280,6 +280,9 @@ Gomoku::~Gomoku()
 	_cfg->set( "W", w() );
 	_cfg->set( "X", x() );
 	_cfg->set( "Y", y() );
+
+	_cfg->set( "debug", _debug );
+	_cfg->set( "alert", _alert );
 	_cfg->flush();
 }
 
@@ -311,16 +314,16 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 //-------------------------------------------------------------------------------
 {
 #ifdef FLTK_USE_NANOSVG
-		#include "go_w_svg.h"
-		#include "go_b_svg.h"
-		#include "last_piece.h"
-		#include "win_w.h"
-		#include "win_b.h"
-	static Fl_SVG_Image *white_piece = 0;
-	static Fl_SVG_Image *black_piece = 0;
-	static Fl_SVG_Image *last_piece = 0;
-	static Fl_SVG_Image *win_white_piece = 0;
-	static Fl_SVG_Image *win_black_piece = 0;
+	#include "go_w_svg.h"
+	#include "go_b_svg.h"
+	#include "last_piece.h"
+	#include "win_w.h"
+	#include "win_b.h"
+	static Fl_SVG_Image *svg_white_piece = 0;
+	static Fl_SVG_Image *svg_black_piece = 0;
+	static Fl_SVG_Image *svg_last_piece = 0;
+	static Fl_SVG_Image *svg_win_white_piece = 0;
+	static Fl_SVG_Image *svg_win_black_piece = 0;
 #endif
 	// calc. dimensions
 	int x = xp( x_ );
@@ -330,54 +333,47 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 	rw -= ceil( (double)rw / 10 );
 	rh -= ceil( (double)rh / 10 );
 #ifdef FLTK_USE_NANOSVG
-	if ( !white_piece )
-		white_piece = new Fl_SVG_Image( NULL, Go_White_Piece );
-	if ( !black_piece )
-		black_piece = new Fl_SVG_Image( NULL, Go_Black_Piece );
-	if ( !last_piece )
-		last_piece = new Fl_SVG_Image( NULL, Last_Piece );
-	if ( !win_white_piece )
-		win_white_piece = new Fl_SVG_Image( NULL, Win_White_Piece );
-	if ( !win_black_piece )
-		win_black_piece = new Fl_SVG_Image( NULL, Win_Black_Piece );
-	Fl_SVG_Image *piece = color_ == 1 ? white_piece : black_piece;
-	piece->resize( rw, rh );
-	piece->draw( x - rw / 2, y - rh / 2 );
+	if ( !svg_white_piece )
+		svg_white_piece = new Fl_SVG_Image( NULL, Go_White_Piece );
+	if ( !svg_black_piece )
+		svg_black_piece = new Fl_SVG_Image( NULL, Go_Black_Piece );
+	if ( !svg_last_piece )
+		svg_last_piece = new Fl_SVG_Image( NULL, Last_Piece );
+	if ( !svg_win_white_piece )
+		svg_win_white_piece = new Fl_SVG_Image( NULL, Win_White_Piece );
+	if ( !svg_win_black_piece )
+		svg_win_black_piece = new Fl_SVG_Image( NULL, Win_Black_Piece );
+	Fl_SVG_Image *svg_piece = color_ == 1 ? svg_white_piece : svg_black_piece;
+	svg_piece->resize( rw, rh );
+	svg_piece->draw( x - rw / 2, y - rh / 2 );
 #else
 	// white or black piece
 	fl_color( color_ == 1 ? FL_WHITE : FL_BLACK );
 	fl_pie( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 
 	// outline
-	fl_color( FL_GRAY );
+	fl_color( FL_DARK_GRAY );
 	fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 #endif
 
-	// highlight
+	// highlight piece(s)
 	bool winning_piece = checkWin( x_, y_ );
-#ifdef FLTK_USE_NANOSVG
-	Fl_SVG_Image *hi_piece = 0;
-	if ( _last_x == x_ && _last_y == y_ )
-		hi_piece = last_piece;
-	else if ( winning_piece )
-		hi_piece = color_ == 1 ? win_white_piece : win_black_piece;
-	if ( hi_piece )
+	bool last_piece = _last_x == x_ && _last_y == y_;
+	if ( last_piece || winning_piece )
 	{
-		hi_piece->resize( rw, rh );
-		hi_piece->draw( x - rw / 2, y - rh / 2 );
-	}
+#ifdef FLTK_USE_NANOSVG
+		Fl_SVG_Image *svg_hi_piece = last_piece ? svg_last_piece :
+		                             color_ == 1 ? svg_win_white_piece :
+		                             svg_win_black_piece;
+		svg_hi_piece->resize( rw, rh );
+		svg_hi_piece->draw( x - rw / 2, y - rh / 2 );
 #else
-	fl_color( FL_DARK_GRAY );
-	fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
-	if ( _last_x == x_ && _last_y == y_ )
-		fl_color( FL_CYAN );
-	else if ( winning_piece )
-		fl_color( color_ == 1 ? FL_GREEN : FL_RED );
-	else
-		fl_line_style( FL_SOLID, 1 );
-	fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
-	fl_line_style( 0, 0 );
+		fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
+		fl_color( last_piece ? FL_CYAN : color_ == 1 ? FL_GREEN : FL_RED );
+		fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
+		fl_line_style( 0, 0 );
 #endif
+	}
 } // drawPiece
 
 void Gomoku::onMove()
@@ -878,7 +874,6 @@ void Gomoku::draw()
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 	}
 } // draw
-
 
 //-------------------------------------------------------------------------------
 int main( int argc_, char *argv_[] )
