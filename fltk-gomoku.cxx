@@ -307,8 +307,14 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 #ifdef FLTK_USE_NANOSVG
 		#include "go_w_svg.h"
 		#include "go_b_svg.h"
+		#include "last_piece.h"
+		#include "win_w.h"
+		#include "win_b.h"
 	static Fl_SVG_Image *white_piece = 0;
 	static Fl_SVG_Image *black_piece = 0;
+	static Fl_SVG_Image *last_piece = 0;
+	static Fl_SVG_Image *win_white_piece = 0;
+	static Fl_SVG_Image *win_black_piece = 0;
 #endif
 	// calc. dimensions
 	int x = xp( x_ );
@@ -322,6 +328,12 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 		white_piece = new Fl_SVG_Image( NULL, Go_White_Piece );
 	if ( !black_piece )
 		black_piece = new Fl_SVG_Image( NULL, Go_Black_Piece );
+	if ( !last_piece )
+		last_piece = new Fl_SVG_Image( NULL, Last_Piece );
+	if ( !win_white_piece )
+		win_white_piece = new Fl_SVG_Image( NULL, Win_White_Piece );
+	if ( !win_black_piece )
+		win_black_piece = new Fl_SVG_Image( NULL, Win_Black_Piece );
 	Fl_SVG_Image *piece = color_ == 1 ? white_piece : black_piece;
 	piece->resize( rw, rh );
 	piece->draw( x - rw / 2, y - rh / 2 );
@@ -334,8 +346,21 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 	fl_color( FL_GRAY );
 	fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 #endif
+
 	// highlight
 	bool winning_piece = checkWin( x_, y_ );
+#ifdef FLTK_USE_NANOSVG
+	Fl_SVG_Image *hi_piece = 0;
+	if ( _last_x == x_ && _last_y == y_ )
+		hi_piece = last_piece;
+	else if ( winning_piece )
+		hi_piece = color_ == 1 ? win_white_piece : win_black_piece;
+	if ( hi_piece )
+	{
+		hi_piece->resize( rw, rh );
+		hi_piece->draw( x - rw / 2, y - rh / 2 );
+	}
+#else
 	fl_color( FL_DARK_GRAY );
 	fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
 	if ( _last_x == x_ && _last_y == y_ )
@@ -343,18 +368,10 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 	else if ( winning_piece )
 		fl_color( color_ == 1 ? FL_GREEN : FL_RED );
 	else
-	{
 		fl_line_style( FL_SOLID, 1 );
-#ifdef FLTK_USE_NANOSVG
-		return;
-#endif
-	}
-#ifdef FLTK_USE_NANOSVG
 	fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
-#else
-	fl_arc( x - rw / 2 + 1, y - rh / 2 + 1, rw - 2, rh - 2, 0, 360 );
-#endif
 	fl_line_style( 0, 0 );
+#endif
 } // drawPiece
 
 void Gomoku::onMove()
