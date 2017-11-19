@@ -742,11 +742,17 @@ int Gomoku::handle( int e_ )
 		redraw();
 	}
 #if 1
-	else if ( e_ == FL_MOVE && _player )
+	else if ( e_ == FL_MOVE && _player && _last_x )
 	{
-		_last_x = 0;
-		_last_y = 0;
-		redraw();
+		static int moved = 0;
+		moved++;
+		if ( moved > 10 )
+		{
+			_last_x = 0;
+			_last_y = 0;
+			moved = 0;
+			redraw();
+		}
 	}
 #endif
 	return Inherited::handle( e_ );
