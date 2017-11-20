@@ -32,6 +32,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <cstdlib>
 #include <cmath>
 #include <ctime>
@@ -173,6 +174,8 @@ public:
 	Gomoku( int argc_ = 0, char *argv_[] = 0 );
 	~Gomoku();
 	void clearBoard();
+	void loadBoardFromFile( const char *f_ );
+	void dumpBoard();
 	void makeMove();
 	void setPiece( int x_, int y_, int who_ );
 	void wait( double delay_ );
@@ -296,6 +299,72 @@ void Gomoku::clearBoard()
 		for ( int y = 1; y <= _G + 1; y++ )
 			_board[x][y] = 0;
 	_history.clear();
+	loadBoardFromFile( "board.txt" );
+}
+
+void Gomoku::loadBoardFromFile( const char *f_ )
+//-------------------------------------------------------------------------------
+{
+	ifstream ifs( f_ );
+	if ( !ifs.is_open() )
+		return;
+	vector<Pos> player;
+	vector<Pos> computer;
+	string line;
+	int y = 0;
+	int last_moved = 0;
+	int last_x = 0;
+	int last_y = 0;
+	while ( getline( ifs, line ) )
+	{
+		if ( y >=  1 && y <= _G + 1 )
+		{
+			for ( int x = 1; x <= _G + 1; x++ )
+			{
+				char c = line[ x * 2];
+				if ( c == 'p' || c == 'P' )
+					_board[x][y] = PLAYER;
+				if ( c == 'c' || c == 'C' )
+					_board[x][y] = COMPUTER;
+				if ( c == 'P' || c == 'C' )
+				{
+					last_x = x;
+					last_y = y;
+				}
+				if ( c == 'P' )
+					last_moved = PLAYER;
+				if ( c == 'C' )
+					last_moved = COMPUTER;
+			}
+		}
+		y++;
+	}
+	_player = last_moved == COMPUTER;
+	_last_x = last_x;
+	_last_y = last_y;
+}
+
+void Gomoku::dumpBoard()
+//-------------------------------------------------------------------------------
+{
+	cout << " ";
+	for ( int x = 1; x <= _G + 1; x++ )
+		cout << " " << (char)('a' + x - 1);
+	cout << endl;
+	for ( int y = 1; y <= _G + 1; y++ )
+	{
+		cout << (char)('A' + y - 1) << " ";
+		for ( int x = 1; x <= _G + 1; x++ )
+		{
+			int who = _board[x][y];
+			bool last = x == _last_x && y == _last_y;
+			char player = last ? 'P' : 'p';
+			char computer = last ? 'C' : 'c';
+			cout << ( who ? ( who == PLAYER ? player  : computer ) : '.' ) << ' ';
+		}
+		cout << endl;
+	}
+	cout << endl;
 }
 
 int Gomoku::xp( int x_ ) const
@@ -615,6 +684,8 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		int x, y;
 		adraw = !randomMove( x, y );
 	}
+	if ( _debug )
+		dumpBoard();
 	if ( adraw || checkWin( x_, y_ ) )
 	{
 		// update game stats
