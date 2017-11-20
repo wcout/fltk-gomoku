@@ -272,6 +272,8 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	show();
 	if ( _player )
 		fl_cursor( FL_CURSOR_HAND );
+	else
+		makeMove();
 }
 
 Gomoku::~Gomoku()
@@ -427,19 +429,21 @@ void Gomoku::makeMove()
 	_pondering = true;
 	fl_cursor( FL_CURSOR_WAIT );
 	Fl::add_timeout( 1.0, cb_move, this );
-	_last_x = 0;
-	_last_y = 0;
-	if ( !findMove( _last_x, _last_y ) )
+	int x = 0;
+	int y = 0;
+	if ( !findMove( x, y ) )
 	{
-		randomMove( _last_x, _last_y );
+		randomMove( x, y );
 		if ( _debug )
-			cout << "randomMove at " << _last_x << "/" << _last_y << endl;
+			cout << "randomMove at " << x << "/" << y << endl;
 	}
 	while ( _pondering )
 		Fl::check();
 	fl_cursor( FL_CURSOR_DEFAULT );
 	_pondering = false;
 	Fl::remove_timeout( cb_move, this );
+	_last_x = x;
+	_last_y = y;
 	onMove();
 }
 
