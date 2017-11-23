@@ -725,6 +725,8 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		cursor( FL_CURSOR_MOVE );
 		while ( _wait_click )
 			Fl::check();
+		if ( !shown() ) // user closed program
+			return;
 		clearBoard();
 		_message.erase();
 		redraw();
