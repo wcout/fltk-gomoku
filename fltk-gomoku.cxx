@@ -113,33 +113,31 @@ struct Pos
 	{}
 };
 
-static int count( int x_, int y_, int dx_, int dy_,
-	int &free1_, int &free2_,
-	const Board &board_ )
+static int count( int x_, int y_, int dx_, int dy_, PosInfo &info_,
+                  const Board &board_ )
 //-------------------------------------------------------------------------------
 {
-	free1_ = 0;
-	free2_ = 0;
+	info_.init();
 	int c = board_[x_][y_];
 	if ( c <= 0 )
 		return 0;
-	int n( 1 );
+	info_.n = 1;
 	int x( x_ );
 	int y( y_ );
 	x += dx_;
 	y += dy_;
 	while ( board_[x][y] == c )
 	{
-		n++;
+		info_.n++;
 		x += dx_;
 		y += dy_;
 	}
 	while ( board_[x][y] == 0 )
 	{
-		free1_++;
+		info_.f1++;
 		x += dx_;
 		y += dy_;
-		if ( free1_ + free2_ + n >= 5 )
+		if ( info_.f1 + info_.f2 + info_.n >= 5 )
 			break;
 	}
 	x = x_;
@@ -150,19 +148,19 @@ static int count( int x_, int y_, int dx_, int dy_,
 	y += dy_;
 	while ( board_[x][y] == c )
 	{
-		n++;
+		info_.n++;
 		x += dx_;
 		y += dy_;
 	}
 	while ( board_[x][y] == 0 )
 	{
-		free2_++;
+		info_.f2++;
 		x += dx_;
 		y += dy_;
-		if ( free1_ + free2_ + n >= 5 )
+		if ( info_.f1 + info_.f2 + info_.n >= 5 )
 			break;
 	}
-	return n;
+	return info_.n;
 } // count
 
 //-------------------------------------------------------------------------------
@@ -190,7 +188,7 @@ private:
 	int yp( int y_ ) const;
 	void onMove();
 	static void cb_move( void *d_ );
-	int count( int x_, int y_, int dx_, int dy_, int &free1_, int &free2_ ) const;
+	int count( int x_, int y_, int dx_, int dy_, PosInfo& info_ ) const;
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
 	bool checkWin( int x_, int y_ ) const;
@@ -516,19 +514,19 @@ void Gomoku::makeMove()
 	onMove();
 }
 
-int Gomoku::count( int x_, int y_, int dx_, int dy_, int &free1_, int &free2_ ) const
+int Gomoku::count( int x_, int y_, int dx_, int dy_, PosInfo& info_ ) const
 //-------------------------------------------------------------------------------
 {
-	return ::count( x_, y_, dx_, dy_, free1_, free2_, _board );
+	return ::count( x_, y_, dx_, dy_, info_, _board );
 }
 
 void Gomoku::countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const
 //-------------------------------------------------------------------------------
 {
-	pos_.info[1].n = ::count( x_, y_,  1,  0, pos_.info[1].f1, pos_.info[1].f2, board_ );
-	pos_.info[2].n = ::count( x_, y_,  0,  1, pos_.info[2].f1, pos_.info[2].f2, board_ );
-	pos_.info[3].n = ::count( x_, y_, -1, -1, pos_.info[3].f1, pos_.info[3].f2, board_ );
-	pos_.info[4].n = ::count( x_, y_,  1, -1, pos_.info[4].f1, pos_.info[4].f2, board_ );
+	::count( x_, y_,  1,  0, pos_.info[1], board_ );
+	::count( x_, y_,  0,  1, pos_.info[2], board_ );
+	::count( x_, y_, -1, -1, pos_.info[3], board_ );
+	::count( x_, y_,  1, -1, pos_.info[4], board_ );
 }
 
 void Gomoku::countPos( int x_, int y_, Eval &pos_ ) const
