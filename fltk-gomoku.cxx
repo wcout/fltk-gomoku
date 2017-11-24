@@ -306,13 +306,11 @@ void Gomoku::loadBoardFromFile( const char *f_ )
 	ifstream ifs( f_ );
 	if ( !ifs.is_open() )
 		return;
-	vector<Pos> player;
-	vector<Pos> computer;
-	string line;
 	int y = 0;
 	int last_moved = 0;
 	int last_x = 0;
 	int last_y = 0;
+	string line;
 	while ( getline( ifs, line ) )
 	{
 		if ( y >=  1 && y <= _G + 1 )
