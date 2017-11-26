@@ -164,6 +164,14 @@ static int count( int x_, int y_, int dx_, int dy_, PosInfo &info_,
 } // count
 
 //-------------------------------------------------------------------------------
+struct Args
+//-------------------------------------------------------------------------------
+{
+	string bgImageFile;
+	string boardFile;
+};
+
+//-------------------------------------------------------------------------------
 class Gomoku : public Fl_Double_Window
 //-------------------------------------------------------------------------------
 {
@@ -172,7 +180,7 @@ public:
 	Gomoku( int argc_ = 0, char *argv_[] = 0 );
 	~Gomoku();
 	void clearBoard();
-	void loadBoardFromFile( const char *f_ );
+	void loadBoardFromFile( const string& f_ );
 	void dumpBoard();
 	void makeMove();
 	void setPiece( int x_, int y_, int who_ );
@@ -183,6 +191,7 @@ protected:
 	void drawBoard( bool bg_ = false );
 	void drawPiece( int color_, int x_, int y_ ) const;
 	void setIcon();
+	void parseArgs( int argc_, char *argv_[] );
 private:
 	int xp( int x_ ) const;
 	int yp( int y_ ) const;
@@ -217,6 +226,7 @@ private:
 	int _alert; // Nite: as above
 	Fl_Preferences *_cfg;
 	string _message;
+	Args _args;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -236,6 +246,7 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_alert( false )
 //-------------------------------------------------------------------------------
 {
+	parseArgs( argc_, argv_ );
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
 	end();
 	bg->box( FL_FLAT_BOX );
@@ -243,8 +254,8 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
 	char *bg_image;
 	_cfg->get( "bg_image", bg_image, "bg.gif" );
-	if ( argc_ > 1 )
-		bg_image = strdup( argv_[1] ); // overrule by cmd line arg
+	if ( _args.bgImageFile.size() )
+		bg_image = strdup( _args.bgImageFile.c_str() ); // overrule by cmd line arg
 	Fl_Image *bg_tile = Fl_Shared_Image::get( bg_image );
 	if ( bg_tile && bg_tile->w() > 0 && bg_tile->h() > 0 )
 		bg->image( new Fl_Tiled_Image( bg_tile ) );
@@ -289,6 +300,25 @@ Gomoku::~Gomoku()
 	_cfg->flush();
 }
 
+void Gomoku::parseArgs( int argc_, char *argv_[] )
+//-------------------------------------------------------------------------------
+{
+	for ( int i = 1; i < argc_; i++ )
+	{
+		string arg = argv_[i];
+		if ( arg == "-b" )
+		{
+			i++;
+			if ( i < argc_ )
+				_args.boardFile = argv_[i];
+		}
+		else if ( arg[0] != '-' )
+		{
+			_args.bgImageFile = argv_[i];
+		}
+	}
+}
+
 void Gomoku::clearBoard()
 //-------------------------------------------------------------------------------
 {
@@ -297,13 +327,14 @@ void Gomoku::clearBoard()
 		for ( int y = 1; y <= _G + 1; y++ )
 			_board[x][y] = 0;
 	_history.clear();
-	loadBoardFromFile( "board.txt" );
+	if ( _args.boardFile.size() )
+	loadBoardFromFile( _args.boardFile );
 }
 
-void Gomoku::loadBoardFromFile( const char *f_ )
+void Gomoku::loadBoardFromFile( const string& f_ )
 //-------------------------------------------------------------------------------
 {
-	ifstream ifs( f_ );
+	ifstream ifs( f_.c_str() );
 	if ( !ifs.is_open() )
 		return;
 	int y = 0;
