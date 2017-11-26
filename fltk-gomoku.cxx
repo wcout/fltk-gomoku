@@ -313,7 +313,7 @@ void Gomoku::loadBoardFromFile( const char *f_ )
 	string line;
 	while ( getline( ifs, line ) )
 	{
-		if ( y >=  1 && y <= _G + 1 )
+		if ( y >= 1 && y <= _G + 1 )
 		{
 			for ( int x = 1; x <= _G + 1; x++ )
 			{
@@ -840,7 +840,7 @@ void Gomoku::drawBoard( bool bg_/* = false*/ )
 	if ( xp( 1 ) > 8 )
 		fl_line_style( FL_SOLID, 2 ); // for outline
 	fl_rect( -2, -2, xp( _G + 2 ) + 2, yp( _G + 2 ) + 2, FL_DARK_GRAY );
-	fl_rect( xp( 1 ), yp( 1 ), xp ( _G  ) + 1, yp( _G  ) + 1, BOARD_GRID_COLOR );
+	fl_rect( xp( 1 ), yp( 1 ), xp ( _G ) + 1, yp( _G ) + 1, BOARD_GRID_COLOR );
 	fl_line_style( 0 , 0 );
 	for ( int x = 0; x <= _G; x++ )
 		fl_line( xp( x + 1 ), yp( 1 ), xp( x + 1 ), yp( 1  + _G ) );
