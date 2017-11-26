@@ -831,8 +831,12 @@ int Gomoku::handle( int e_ )
 				_history.pop_back();
 				_board[ pos.x ][ pos.y ] = 0;
 				_moves--;
+				if ( _debug )
+					cout << "Undo move " << pos.x << "/" << pos.y << endl;
 			}
 			redraw();
+			if ( _debug )
+				dumpBoard();
 		}
 	}
 	else if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
