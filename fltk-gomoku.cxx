@@ -190,8 +190,10 @@ public:
 protected:
 	void drawBoard( bool bg_ = false );
 	void drawPiece( int color_, int x_, int y_ ) const;
+	void nextMove();
 	void setIcon();
 	void parseArgs( int argc_, char *argv_[] );
+	bool waitKey();
 private:
 	int xp( int x_ ) const;
 	int yp( int y_ ) const;
@@ -282,10 +284,20 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	resize( X, Y, W, W );
 	setIcon();
 	show();
+	nextMove();
+}
+
+void Gomoku::nextMove()
+//-------------------------------------------------------------------------------
+{
 	if ( _player )
+	{
 		fl_cursor( FL_CURSOR_HAND );
+	}
 	else
+	{
 		makeMove();
+	}
 }
 
 Gomoku::~Gomoku()
@@ -748,25 +760,16 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 			_message = msg.str();
 			redraw();
 		}
-		_wait_click = true;
-		cursor( FL_CURSOR_MOVE );
-		while ( _wait_click )
-			Fl::check();
-		if ( !shown() ) // user closed program
+
+		if ( !waitKey() )
 			return;
+
 		clearBoard();
 		_message.erase();
 		redraw();
 	}
 	_player = !_player;
-	if ( !_player )
-	{
-		makeMove();
-	}
-	else
-	{
-		fl_cursor( FL_CURSOR_HAND );
-	}
+	nextMove();
 } // setPiece
 
 void Gomoku::onDelay()
@@ -792,6 +795,18 @@ void Gomoku::wait( double delay_ )
 		Fl::check();
 	Fl::remove_timeout( cb_delay, this );
 	_waiting = false;
+}
+
+bool Gomoku::waitKey()
+//-------------------------------------------------------------------------------
+{
+	_wait_click = true;
+	cursor( FL_CURSOR_MOVE );
+	while ( _wait_click )
+		Fl::check();
+	if ( !shown() ) // user closed program
+		return false;
+	return true;
 }
 
 /*virtual */
