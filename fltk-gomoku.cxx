@@ -817,7 +817,10 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		clearBoard();
 		_message.erase();
 		if ( _replay )
+		{
 			_message = "Replay mode";
+			_player = !_first_player;
+		}
 		else
 			_player = _first_player;
 		redraw();
