@@ -199,6 +199,7 @@ private:
 	int yp( int y_ ) const;
 	void onMove();
 	static void cb_move( void *d_ );
+	static void cb_ponder( void *d_ );
 	int count( int x_, int y_, int dx_, int dy_, PosInfo& info_ ) const;
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
@@ -214,6 +215,7 @@ private:
 	Board _board;
 	Eval _eval[24][24];
 	bool _player;
+	bool _first_player;
 	bool _pondering;
 	int _last_x;
 	int _last_y;
@@ -223,7 +225,10 @@ private:
 	int _player_wins;
 	int _computer_wins;
 	bool _wait_click;
+	bool _replay;
+	bool _abortReplay;
 	vector<Pos> _history;
+	vector<Pos> _replayMoves;
 	int _debug; // Note: using int instead of bool for signature of preferences
 	int _alert; // Nite: as above
 	Fl_Preferences *_cfg;
@@ -235,6 +240,7 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	Inherited( 600, 600, "FLTK Gomoku (\"5 in a row\")" ),
 	_G( 18 ),
 	_player( true ),
+	_first_player( _player ),
 	_pondering( false ),
 	_last_x( 0 ),
 	_last_y( 0 ),
@@ -244,6 +250,8 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_player_wins( 0 ),
 	_computer_wins( 0 ),
 	_wait_click( false ),
+	_replay( false ),
+	_abortReplay( false ),
 	_debug( false ),
 	_alert( false )
 //-------------------------------------------------------------------------------
@@ -290,6 +298,23 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 void Gomoku::nextMove()
 //-------------------------------------------------------------------------------
 {
+	if ( _history.empty() )
+		_first_player = _player;
+	if ( _replay )
+	{
+		if ( !waitKey() )
+			return;
+		fl_cursor( FL_CURSOR_WAIT );
+		_last_x = 0;
+		_last_y = 0;
+		if ( !_abortReplay && _history.size() < _replayMoves.size() )
+		{
+			_last_x = _replayMoves[ _history.size() ].x;
+			_last_y = _replayMoves[ _history.size() ].y;
+		}
+		Fl::add_timeout( .1, cb_move, this );
+		return;
+	}
 	if ( _player )
 	{
 		fl_cursor( FL_CURSOR_HAND );
@@ -338,6 +363,7 @@ void Gomoku::clearBoard()
 	for ( int x = 1; x <= _G + 1; x++ )
 		for ( int y = 1; y <= _G + 1; y++ )
 			_board[x][y] = 0;
+	_replayMoves = _history;
 	_history.clear();
 	if ( _args.boardFile.size() )
 	loadBoardFromFile( _args.boardFile );
@@ -489,14 +515,21 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 void Gomoku::onMove()
 //-------------------------------------------------------------------------------
 {
-	setPiece( _last_x, _last_y, COMPUTER );
+	setPiece( _last_x, _last_y, _player ? PLAYER : COMPUTER );
+}
+
+/*static*/
+void Gomoku::cb_ponder( void *d_ )
+//-------------------------------------------------------------------------------
+{
+	(static_cast<Gomoku *>(d_))->pondering( false );
 }
 
 /*static*/
 void Gomoku::cb_move( void *d_ )
 //-------------------------------------------------------------------------------
 {
-	(static_cast<Gomoku *>(d_))->pondering( false );
+	(static_cast<Gomoku *>(d_))->onMove();
 }
 
 bool Gomoku::randomMove( int &x_, int &y_ )
@@ -536,7 +569,7 @@ void Gomoku::makeMove()
 {
 	_pondering = true;
 	fl_cursor( FL_CURSOR_WAIT );
-	Fl::add_timeout( 1.0, cb_move, this );
+	Fl::add_timeout( 1.0, cb_ponder, this );
 	int x = 0;
 	int y = 0;
 	if ( !findMove( x, y ) )
@@ -549,7 +582,7 @@ void Gomoku::makeMove()
 		Fl::check();
 	fl_cursor( FL_CURSOR_DEFAULT );
 	_pondering = false;
-	Fl::remove_timeout( cb_move, this );
+	Fl::remove_timeout( cb_ponder, this );
 	_last_x = x;
 	_last_y = y;
 	onMove();
@@ -705,7 +738,8 @@ int Gomoku::eval( int x, int y )
 void Gomoku::setPiece( int x_, int y_, int who_ )
 //-------------------------------------------------------------------------------
 {
-	_moves++;
+	if ( !_replay )
+		_moves++;
 	bool adraw = ( x_ ==  0 || y_ == 0 );
 	if ( !adraw )
 	{
@@ -727,28 +761,40 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		dumpBoard();
 	if ( adraw || checkWin( x_, y_ ) )
 	{
-		// update game stats
-		_games++;
-		if ( !adraw )
-			who_ == PLAYER ? _player_wins++ : _computer_wins++;
-		_cfg->set( "games", _games );
-		_cfg->set( "moves", _moves );
-		_cfg->set( "player_wins", _player_wins );
-		_cfg->set( "computer_wins", _computer_wins );
-		_cfg->flush();
-
+		if ( _replay )
+		{
+			// update game stats
+			_games++;
+			if ( !adraw )
+				who_ == PLAYER ? _player_wins++ : _computer_wins++;
+			_cfg->set( "games", _games );
+			_cfg->set( "moves", _moves );
+			_cfg->set( "player_wins", _player_wins );
+			_cfg->set( "computer_wins", _computer_wins );
+			_cfg->flush();
+		}
 		wait( 0.5 );
 		fl_beep( FL_BEEP_MESSAGE );
 
 		ostringstream stat;
-		stat << _games << " games - " <<
-		_player_wins << " : " << _computer_wins <<
-		endl << "(average moves: " << _moves / _games << ")";
-
+		if ( _replay )
+		{
+			stat << "** Replay end **";
+		}
+		else
+		{
+			stat << _games << " games - " <<
+			_player_wins << " : " << _computer_wins <<
+			endl << "(average moves: " << _moves / _games << ")";
+		}
 		ostringstream msg;
-		msg << ( adraw ? "No more moves!\n\nGame ends adraw." :
-		         who_ == PLAYER ? "You managed to win!" : "FLTK wins!" ) <<
-		         endl << endl << stat.str();
+		if ( !_abortReplay )
+		{
+			msg << ( adraw ? "No more moves!\n\nGame ends adraw." :
+			         who_ == PLAYER ? "You managed to win!" : "FLTK wins!" ) <<
+			         endl << endl;
+		}
+		msg << stat.str();
 		if ( _debug )
 			cout << msg.str() << endl;
 		if ( _alert )
@@ -764,8 +810,16 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		if ( !waitKey() )
 			return;
 
+		int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
+		_replay = answer == 1;
+		_abortReplay = false;
+
 		clearBoard();
 		_message.erase();
+		if ( _replay )
+			_message = "Replay mode";
+		else
+			_player = _first_player;
 		redraw();
 	}
 	_player = !_player;
@@ -822,7 +876,22 @@ int Gomoku::handle( int e_ )
 		     ( Fl::event_key( ' ' ) || Fl::event_key( FL_Escape ) ) ) )
 		{
 			_wait_click = false;
+			if ( Fl::event_key( FL_Escape ) )
+				_abortReplay = true;
 			return 1;
+		}
+		else if ( _replay && e_ == FL_KEYDOWN && Fl::event_key( FL_BackSpace ) )
+		{
+			if ( _history.size() )
+			{
+				Pos pos = _history.back();
+				_history.pop_back();
+				_board[ pos.x ][ pos.y ] = 0;
+				_player = !_player;
+				redraw();
+				if ( _debug )
+					dumpBoard();
+			}
 		}
 		return Inherited::handle( e_ );
 	}
