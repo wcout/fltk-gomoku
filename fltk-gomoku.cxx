@@ -382,8 +382,7 @@ void Gomoku::loadBoardFromFile( const string& f_ )
 		return;
 	int y = 0;
 	int last_moved = 0;
-	int last_x = 0;
-	int last_y = 0;
+	Move last_move;
 	string line;
 	while ( getline( ifs, line ) )
 	{
@@ -398,8 +397,7 @@ void Gomoku::loadBoardFromFile( const string& f_ )
 					_board[x][y] = COMPUTER;
 				if ( c == 'P' || c == 'C' )
 				{
-					last_x = x;
-					last_y = y;
+					last_move.init( x, y );
 				}
 				if ( c == 'P' )
 					last_moved = PLAYER;
@@ -410,7 +408,7 @@ void Gomoku::loadBoardFromFile( const string& f_ )
 		y++;
 	}
 	_player = last_moved == COMPUTER;
-	_move.init( last_x, last_y );
+	_move = last_move;
 }
 
 void Gomoku::dumpBoard()
