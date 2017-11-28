@@ -182,6 +182,7 @@ struct Args
 class Gomoku : public Fl_Double_Window
 //-------------------------------------------------------------------------------
 {
+#define DBG(a) { if ( _debug ) std::cout << a << endl; }
 	typedef Fl_Double_Window Inherited;
 public:
 	Gomoku( int argc_ = 0, char *argv_[] = 0 );
@@ -576,8 +577,7 @@ void Gomoku::makeMove()
 	if ( !findMove( move ) )
 	{
 		randomMove( move );
-		if ( _debug )
-			cout << "randomMove at " << move.x << "/" << move.y << endl;
+		DBG( "randomMove at " << move.x << "/" << move.y );
 	}
 	while ( _pondering )
 		Fl::check();
@@ -634,8 +634,7 @@ bool Gomoku::findMove( Move& move_ )
 			}
 		}
 	}
-	if ( _debug )
-		cout << moves.size() << " moves evaluated" << endl;
+	DBG( moves.size() << " moves evaluated" );
 	if ( moves.empty() )
 		return false;
 
@@ -654,8 +653,7 @@ bool Gomoku::findMove( Move& move_ )
 			equal.push_back( moves[i] );
 		}
 	}
-	if ( _debug )
-		cout << equal.size() << " moves with value " << max_value << endl;
+	DBG( equal.size() << " moves with value " << max_value );
 	int move = random() % equal.size();
 	move_ = equal[move];
 	return true;
@@ -676,8 +674,7 @@ int Gomoku::eval( Move& move_ )
 	countPos( x, y, ec, board );
 	if ( ec.wins() )
 	{
-		if ( _debug )
-			cout << "eval COMPUTER wins at " << x << "/" << y << endl;
+		DBG( "eval COMPUTER wins at " << x << "/" << y );
 		value += 10000;
 	}
 
@@ -687,50 +684,43 @@ int Gomoku::eval( Move& move_ )
 
 	if ( ep.wins() )
 	{
-		if ( _debug )
-			cout << "eval PLAYER wins at " << x << "/" << y << endl;
+		DBG( "eval PLAYER wins at " << x << "/" << y );
 		value += 9000;
 	}
 
 	if ( ec.has4() )
 	{
-		if ( _debug )
-			cout << "eval has4 COMPUTER at " << x << "/" << y << endl;
+		DBG( "eval has4 COMPUTER at " << x << "/" << y );
 		value += 8000;
 	}
 
 	if ( ep.has4() )
 	{
-		if ( _debug )
-			cout << "eval has4 PLAYER at " << x << "/" << y << endl;
+		DBG( "eval has4 PLAYER at " << x << "/" << y );
 		value += 7000;
 	}
 
 	if ( ec.has3Fork() )
 	{
-		if ( _debug )
-			cout << "eval has3Fork COMPUTER at " << x << "/" << y << endl;
+		DBG( "eval has3Fork COMPUTER at " << x << "/" << y );
 		value += 2000;
 	}
 
 	if ( ep.has3Fork() )
 	{
-		if ( _debug )
-			cout << "eval has3Fork PLAYER at " << x << "/" << y << endl;
+		DBG( "eval has3Fork PLAYER at " << x << "/" << y );
 		value += 1000;
 	}
 
 	if ( ec.has3() )
 	{
-		if ( _debug )
-			cout << "eval has3 COMPUTER at " << x << "/" << y << endl;
+		DBG( "eval has3 COMPUTER at " << x << "/" << y );
 		value += 500;
 	}
 
 	if ( ep.has3() )
 	{
-		if ( _debug )
-			cout << "eval has3 PLAYER at " << x << "/" << y << endl;
+		DBG( "eval has3 PLAYER at " << x << "/" << y );
 		value += 400;
 	}
 
@@ -755,9 +745,9 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		_history.push_back( move_ );
 		_move = move_;
 		_board[ move_.x ][ move_.y ] = who_;
-		if ( _debug )
-			cout << "Move #" << _history.size() << ": " <<
-			        (char)( move_.y + 'A' - 1 ) << (char)( move_.x + 'a' - 1 ) << endl;
+		DBG( "Move #" << _history.size() << ": " <<
+		     (char)( move_.y + 'A' - 1 ) << (char)( move_.x + 'a' - 1 ) <<
+			  " (" << move_.x << "/" << move_.y << ") value: " << move_.value );
 		redraw();
 	}
 	if ( _player )
@@ -803,8 +793,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 			         endl << endl;
 		}
 		msg << stat.str();
-		if ( _debug )
-			cout << msg.str() << endl;
+		DBG( msg.str() );
 		if ( _alert )
 		{
 			fl_alert( "%s", msg.str().c_str() );
@@ -940,8 +929,7 @@ int Gomoku::handle( int e_ )
 				_history.pop_back();
 				_board[ move.x ][ move.y ] = 0;
 				_moves--;
-				if ( _debug )
-					cout << "Undo move " << move.x << "/" << move.y << endl;
+				DBG( "Undo move " << move.x << "/" << move.y );
 			}
 			Move move;
 			if ( _history.size() )
