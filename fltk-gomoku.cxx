@@ -189,14 +189,14 @@ public:
 	~Gomoku();
 	void clearBoard();
 	void loadBoardFromFile( const string& f_ );
-	void dumpBoard();
+	void dumpBoard() const;
 	void makeMove();
 	void setPiece( const Move& move_, int who_ );
 	void wait( double delay_ );
 	virtual int handle( int e_ );
 	virtual void draw();
 protected:
-	void drawBoard( bool bg_ = false );
+	void drawBoard( bool bg_ = false ) const;
 	void drawPiece( int color_, int x_, int y_ ) const;
 	void nextMove();
 	void setIcon();
@@ -212,9 +212,9 @@ private:
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
 	bool checkWin( int x_, int y_ ) const;
-	bool findMove( Move& move_ );
-	bool randomMove( Move& move_ );
-	int eval( Move& move_ );
+	bool findMove( Move& move_ ) const;
+	bool randomMove( Move& move_ ) const;
+	int eval( Move& move_ ) const;
 	void onDelay();
 	static void cb_delay( void *d_ );
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
@@ -411,7 +411,7 @@ void Gomoku::loadBoardFromFile( const string& f_ )
 	_move = last_move;
 }
 
-void Gomoku::dumpBoard()
+void Gomoku::dumpBoard() const
 //-------------------------------------------------------------------------------
 {
 	cout << " ";
@@ -534,7 +534,7 @@ void Gomoku::cb_move( void *d_ )
 	(static_cast<Gomoku *>(d_))->onMove();
 }
 
-bool Gomoku::randomMove( Move& move_ )
+bool Gomoku::randomMove( Move& move_ ) const
 //-------------------------------------------------------------------------------
 {
 	vector<Move> moves;
@@ -615,7 +615,7 @@ bool Gomoku::checkWin( int x_, int y_ ) const
 	return e.wins();
 }
 
-bool Gomoku::findMove( Move& move_ )
+bool Gomoku::findMove( Move& move_ ) const
 //-------------------------------------------------------------------------------
 {
 	vector<Move> moves;
@@ -657,7 +657,7 @@ bool Gomoku::findMove( Move& move_ )
 	return true;
 } // findMove
 
-int Gomoku::eval( Move& move_ )
+int Gomoku::eval( Move& move_ ) const
 //-------------------------------------------------------------------------------
 {
 	Board board;
@@ -952,7 +952,7 @@ int Gomoku::handle( int e_ )
 	return Inherited::handle( e_ );
 } // handle
 
-void Gomoku::drawBoard( bool bg_/* = false*/ )
+void Gomoku::drawBoard( bool bg_/* = false*/ ) const
 //-------------------------------------------------------------------------------
 {
 	if ( bg_ )
