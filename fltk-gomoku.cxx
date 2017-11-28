@@ -321,10 +321,12 @@ void Gomoku::nextMove()
 	}
 	if ( _player )
 	{
+		_message = "Your move";
 		fl_cursor( FL_CURSOR_HAND );
 	}
 	else
 	{
+		_message = "Thinking...";
 		makeMove();
 	}
 }
@@ -808,6 +810,8 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
 		_replay = answer == 1;
 		_abortReplay = false;
+		_message.erase();
+		_dmsg.erase();
 		if ( _replay )
 		{
 			_message = "Replay mode";
@@ -819,9 +823,6 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 			_player = _first_player;
 		}
 		clearBoard();
-
-		_message.erase();
-		_dmsg.erase();
 		redraw();
 	}
 	_player = !_player;
@@ -1064,7 +1065,7 @@ void Gomoku::draw()
 	if ( _message.size() )
 	{
 		fl_color( FL_DARK_GRAY );
-		fl_font( FL_HELVETICA|FL_BOLD, xp( 1 ) );
+		fl_font( FL_HELVETICA|FL_BOLD, .8 * xp( 1 ) );
 		fl_draw( _message.c_str(), xp( 1 ) + 2, yp( 1 ) + 2, xp( 18 ), yp( 18 ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 		fl_color( FL_YELLOW );
