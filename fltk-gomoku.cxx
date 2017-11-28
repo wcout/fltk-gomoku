@@ -99,18 +99,25 @@ struct Eval
 };
 
 //-------------------------------------------------------------------------------
-struct Pos
+struct Move
 //-------------------------------------------------------------------------------
 {
 	int x;
 	int y;
 	int value;
 	Eval eval;
-	Pos( int x_, int y_, int value_ = 0 ) :
+	Move( int x_ = 0, int y_ = 0, int value_ = 0 ) :
 		x( x_ ),
 		y( y_ ),
 		value( value_ )
 	{}
+	void init( int x_ = 0, int y_ = 0, int value_ = 0 )
+	{
+		x = x_;
+		y = y_;
+		value = value_;
+		eval.init();
+	}
 };
 
 static int count( int x_, int y_, int dx_, int dy_, PosInfo &info_,
@@ -183,7 +190,7 @@ public:
 	void loadBoardFromFile( const string& f_ );
 	void dumpBoard();
 	void makeMove();
-	void setPiece( int x_, int y_, int who_ );
+	void setPiece( const Move& move_, int who_ );
 	void wait( double delay_ );
 	virtual int handle( int e_ );
 	virtual void draw();
@@ -204,9 +211,9 @@ private:
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
 	bool checkWin( int x_, int y_ ) const;
-	bool findMove( int &x_, int &y_ );
-	bool randomMove( int &x_, int &y_ );
-	int eval( int x, int y );
+	bool findMove( Move& move_ );
+	bool randomMove( Move& move_ );
+	int eval( Move& move_ );
 	void onDelay();
 	static void cb_delay( void *d_ );
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
@@ -217,8 +224,7 @@ private:
 	bool _player;
 	bool _first_player;
 	bool _pondering;
-	int _last_x;
-	int _last_y;
+	Move _move;
 	bool _waiting;
 	int _games;
 	int _moves;
@@ -227,12 +233,13 @@ private:
 	bool _wait_click;
 	bool _replay;
 	bool _abortReplay;
-	vector<Pos> _history;
-	vector<Pos> _replayMoves;
+	vector<Move> _history;
+	vector<Move> _replayMoves;
 	int _debug; // Note: using int instead of bool for signature of preferences
 	int _alert; // Nite: as above
 	Fl_Preferences *_cfg;
 	string _message;
+	string _dmsg;
 	Args _args;
 };
 
@@ -242,8 +249,6 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_player( true ),
 	_first_player( _player ),
 	_pondering( false ),
-	_last_x( 0 ),
-	_last_y( 0 ),
 	_waiting( false ),
 	_games( 0 ),
 	_moves( 0 ),
@@ -305,12 +310,10 @@ void Gomoku::nextMove()
 		if ( !waitKey() )
 			return;
 		fl_cursor( FL_CURSOR_WAIT );
-		_last_x = 0;
-		_last_y = 0;
+		_move.init();
 		if ( !_abortReplay && _history.size() < _replayMoves.size() )
 		{
-			_last_x = _replayMoves[ _history.size() ].x;
-			_last_y = _replayMoves[ _history.size() ].y;
+			_move = _replayMoves[ _history.size() ];
 		}
 		Fl::add_timeout( .1, cb_move, this );
 		return;
@@ -363,7 +366,8 @@ void Gomoku::clearBoard()
 	for ( int x = 1; x <= _G + 1; x++ )
 		for ( int y = 1; y <= _G + 1; y++ )
 			_board[x][y] = 0;
-	_replayMoves = _history;
+	if ( _replayMoves.empty() )
+		_replayMoves = _history;
 	_history.clear();
 	if ( _args.boardFile.size() )
 	loadBoardFromFile( _args.boardFile );
@@ -405,8 +409,7 @@ void Gomoku::loadBoardFromFile( const string& f_ )
 		y++;
 	}
 	_player = last_moved == COMPUTER;
-	_last_x = last_x;
-	_last_y = last_y;
+	_move.init( last_x, last_y );
 }
 
 void Gomoku::dumpBoard()
@@ -422,7 +425,7 @@ void Gomoku::dumpBoard()
 		for ( int x = 1; x <= _G + 1; x++ )
 		{
 			int who = _board[x][y];
-			bool last = x == _last_x && y == _last_y;
+			bool last = x == _move.x && y == _move.y;
 			char player = last ? 'P' : 'p';
 			char computer = last ? 'C' : 'c';
 			cout << ( who ? ( who == PLAYER ? player  : computer ) : '.' ) << ' ';
@@ -494,7 +497,7 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 
 	// highlight piece(s)
 	bool winning_piece = checkWin( x_, y_ );
-	bool last_piece = _last_x == x_ && _last_y == y_;
+	bool last_piece = _move.x == x_ && _move.y == y_;
 	if ( last_piece || winning_piece )
 	{
 #ifdef FLTK_USE_NANOSVG
@@ -515,7 +518,7 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 void Gomoku::onMove()
 //-------------------------------------------------------------------------------
 {
-	setPiece( _last_x, _last_y, _player ? PLAYER : COMPUTER );
+	setPiece( _move, _player ? PLAYER : COMPUTER );
 }
 
 /*static*/
@@ -532,10 +535,10 @@ void Gomoku::cb_move( void *d_ )
 	(static_cast<Gomoku *>(d_))->onMove();
 }
 
-bool Gomoku::randomMove( int &x_, int &y_ )
+bool Gomoku::randomMove( Move& move_ )
 //-------------------------------------------------------------------------------
 {
-	vector<Pos> moves;
+	vector<Move> moves;
 	int r( 0 );
 	for ( int x = 1; x <= _G + 1; x++ )
 	{
@@ -546,11 +549,11 @@ bool Gomoku::randomMove( int &x_, int &y_ )
 				if ( x > _G / 3 && x < _G - _G / 3 &&
 				     y > _G / 3 && y < _G - _G / 3 )
 				{
-					moves.insert( moves.begin(), Pos( x, y ) );
+					moves.insert( moves.begin(), Move( x, y ) );
 					r++;
 				}
 				else
-					moves.push_back( Pos( x, y ) );
+					moves.push_back( Move( x, y ) );
 			}
 		}
 	}
@@ -559,8 +562,7 @@ bool Gomoku::randomMove( int &x_, int &y_ )
 	if ( !r )
 		r = moves.size();
 	r = random() % r;
-	x_ = moves[r].x;
-	y_ = moves[r].y;
+	move_ = moves[r];
 	return true;
 } // randomMove
 
@@ -570,21 +572,19 @@ void Gomoku::makeMove()
 	_pondering = true;
 	fl_cursor( FL_CURSOR_WAIT );
 	Fl::add_timeout( 1.0, cb_ponder, this );
-	int x = 0;
-	int y = 0;
-	if ( !findMove( x, y ) )
+	Move move;
+	if ( !findMove( move ) )
 	{
-		randomMove( x, y );
+		randomMove( move );
 		if ( _debug )
-			cout << "randomMove at " << x << "/" << y << endl;
+			cout << "randomMove at " << move.x << "/" << move.y << endl;
 	}
 	while ( _pondering )
 		Fl::check();
 	fl_cursor( FL_CURSOR_DEFAULT );
 	_pondering = false;
 	Fl::remove_timeout( cb_ponder, this );
-	_last_x = x;
-	_last_y = y;
+	_move = move;
 	onMove();
 }
 
@@ -617,19 +617,20 @@ bool Gomoku::checkWin( int x_, int y_ ) const
 	return e.wins();
 }
 
-bool Gomoku::findMove( int &x_, int &y_ )
+bool Gomoku::findMove( Move& move_ )
 //-------------------------------------------------------------------------------
 {
-	vector<Pos> moves;
+	vector<Move> moves;
 	for ( int x = 1; x <= _G + 1; x++ )
 	{
 		for ( int y = 1; y <= _G + 1; y++ )
 		{
 			if ( _board[x][y] == 0 )
 			{
-				int value = eval( x, y );
+				Move move( x, y );
+				int value = eval( move );
 				if ( value)
-					moves.push_back( Pos( x, y, value ) );
+					moves.push_back( move );
 			}
 		}
 	}
@@ -639,7 +640,7 @@ bool Gomoku::findMove( int &x_, int &y_ )
 		return false;
 
 	int max_value = 0;
-	vector<Pos> equal;
+	vector<Move> equal;
 	for ( size_t i = 0; i < moves.size(); i++ )
 	{
 		if ( moves[i].value > max_value )
@@ -656,18 +657,19 @@ bool Gomoku::findMove( int &x_, int &y_ )
 	if ( _debug )
 		cout << equal.size() << " moves with value " << max_value << endl;
 	int move = random() % equal.size();
-	x_ = equal[move].x;
-	y_ = equal[move].y;
+	move_ = equal[move];
 	return true;
 } // findMove
 
-int Gomoku::eval( int x, int y )
+int Gomoku::eval( Move& move_ )
 //-------------------------------------------------------------------------------
 {
 	Board board;
 	memcpy( &board, &_board, sizeof( board ) );
 
 	int value = 0;
+	int x = move_.x;
+	int y = move_.y;
 
 	board[x][y] = COMPUTER;
 	Eval ec;
@@ -732,36 +734,42 @@ int Gomoku::eval( int x, int y )
 		value += 400;
 	}
 
+	move_.value = value;
 	return value;
 } // eval
 
-void Gomoku::setPiece( int x_, int y_, int who_ )
+void Gomoku::setPiece( const Move& move_, int who_ )
 //-------------------------------------------------------------------------------
 {
 	if ( !_replay )
 		_moves++;
-	bool adraw = ( x_ ==  0 || y_ == 0 );
+	else if ( _debug && move_.x )
+	{
+		ostringstream ss;
+		ss << "Value: " << move_.value;
+		_dmsg = ss.str();
+	}
+	bool adraw = ( move_.x ==  0 || move_.y == 0 );
 	if ( !adraw )
 	{
-		_history.push_back( Pos( x_, y_ ) );
-		_board[ x_][ y_ ] = who_;
-		_last_x = x_;
-		_last_y = y_;
+		_history.push_back( move_ );
+		_move = move_;
+		_board[ move_.x ][ move_.y ] = who_;
 		if ( _debug )
 			cout << "Move #" << _history.size() << ": " <<
-			        (char)( _last_y + 'A' - 1 ) << (char)( _last_x + 'a' - 1 ) << endl;
+			        (char)( move_.y + 'A' - 1 ) << (char)( move_.x + 'a' - 1 ) << endl;
 		redraw();
 	}
 	if ( _player )
 	{
-		int x, y;
-		adraw = !randomMove( x, y );
+		Move move;
+		adraw = !randomMove( move );
 	}
 	if ( _debug )
 		dumpBoard();
-	if ( adraw || checkWin( x_, y_ ) )
+	if ( adraw || checkWin( move_.x, move_.y ) )
 	{
-		if ( _replay )
+		if ( !_replay )
 		{
 			// update game stats
 			_games++;
@@ -813,16 +821,20 @@ void Gomoku::setPiece( int x_, int y_, int who_ )
 		int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
 		_replay = answer == 1;
 		_abortReplay = false;
-
-		clearBoard();
-		_message.erase();
 		if ( _replay )
 		{
 			_message = "Replay mode";
 			_player = !_first_player;
 		}
 		else
+		{
+			_replayMoves.clear();
 			_player = _first_player;
+		}
+		clearBoard();
+
+		_message.erase();
+		_dmsg.erase();
 		redraw();
 	}
 	_player = !_player;
@@ -873,6 +885,12 @@ int Gomoku::handle( int e_ )
 	if ( e_ == FL_HIDE ) // window closed, don't block exit!
 		_wait_click = false;
 
+	if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
+	{
+		_debug = !_debug;
+		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
+		redraw();
+	}
 	if ( _wait_click )
 	{
 		if ( e_ == FL_PUSH || ( e_ == FL_KEYDOWN &&
@@ -887,10 +905,14 @@ int Gomoku::handle( int e_ )
 		{
 			if ( _history.size() )
 			{
-				Pos pos = _history.back();
+				Move move = _history.back();
 				_history.pop_back();
-				_board[ pos.x ][ pos.y ] = 0;
+				_board[ move.x ][ move.y ] = 0;
 				_player = !_player;
+				move.init();
+				if ( _history.size() )
+					move = _history.back();
+				_move = move;
 				redraw();
 				if ( _debug )
 					dumpBoard();
@@ -903,7 +925,7 @@ int Gomoku::handle( int e_ )
 		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 		int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
 		if ( x >= 1 && x <= _G + 1 && y >= 1 && y <= _G + 1 && _board[x][y] == 0 )
-			setPiece( x, y, PLAYER );
+			setPiece( Move( x, y ), PLAYER );
 		else
 			fl_beep( FL_BEEP_ERROR );
 		return 1;
@@ -914,38 +936,33 @@ int Gomoku::handle( int e_ )
 		{
 			for ( int i = 0; i < 2; i++ )
 			{
-				Pos pos = _history.back();
+				Move move = _history.back();
 				_history.pop_back();
-				_board[ pos.x ][ pos.y ] = 0;
+				_board[ move.x ][ move.y ] = 0;
 				_moves--;
 				if ( _debug )
-					cout << "Undo move " << pos.x << "/" << pos.y << endl;
+					cout << "Undo move " << move.x << "/" << move.y << endl;
 			}
+			Move move;
+			if ( _history.size() )
+				move = _history.back();
+			_move = move;
 			redraw();
 			if ( _debug )
 				dumpBoard();
 		}
 	}
-	else if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
-	{
-		_debug = !_debug;
-		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
-		redraw();
-	}
-#if 1
-	else if ( e_ == FL_MOVE && _player && _last_x )
+	else if ( e_ == FL_MOVE && _player && _move.x )
 	{
 		static int moved = 0;
 		moved++;
 		if ( moved > 10 )
 		{
-			_last_x = 0;
-			_last_y = 0;
+			_move.x = 0;
 			moved = 0;
 			redraw();
 		}
 	}
-#endif
 	return Inherited::handle( e_ );
 } // handle
 
@@ -1066,6 +1083,14 @@ void Gomoku::draw()
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 		fl_color( FL_YELLOW );
 		fl_draw( _message.c_str(), xp( 1 ) , yp( 1 ), xp( 18 ), yp( 18 ),
+			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
+	}
+
+	if ( _dmsg.size() )
+	{
+		fl_color( FL_WHITE );
+		fl_font( FL_HELVETICA|FL_BOLD, xp( 1 ) / 3 );
+		fl_draw( _dmsg.c_str(), xp( 1 ), yp( _G + 1 ) + yp( 1 ) / 2, xp( 18 ), yp( 18 ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 	}
 } // draw
