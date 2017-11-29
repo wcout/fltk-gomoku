@@ -223,7 +223,6 @@ private:
 	Board _board;
 	Eval _eval[24][24];
 	bool _player;
-	bool _first_player;
 	bool _pondering;
 	Move _move;
 	bool _waiting;
@@ -248,7 +247,6 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	Inherited( 600, 600, "FLTK Gomoku (\"5 in a row\")" ),
 	_G( 18 ),
 	_player( true ),
-	_first_player( _player ),
 	_pondering( false ),
 	_waiting( false ),
 	_games( 0 ),
@@ -304,8 +302,6 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 void Gomoku::nextMove()
 //-------------------------------------------------------------------------------
 {
-	if ( _history.empty() )
-		_first_player = _player;
 	if ( _replay )
 	{
 		if ( !waitKey() )
@@ -369,8 +365,6 @@ void Gomoku::clearBoard()
 	for ( int x = 1; x <= _G + 1; x++ )
 		for ( int y = 1; y <= _G + 1; y++ )
 			_board[x][y] = 0;
-	if ( _replayMoves.empty() )
-		_replayMoves = _history;
 	_history.clear();
 	if ( _args.boardFile.size() )
 	loadBoardFromFile( _args.boardFile );
@@ -812,17 +806,22 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		_abortReplay = false;
 		_message.erase();
 		_dmsg.erase();
+		_replayMoves = _history;
+		_move.init();
+		Move first_move = _history[0];
+		_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
+		clearBoard();
 		if ( _replay )
 		{
 			_message = "Replay mode";
-			_player = !_first_player;
+			_player = !_player; // (need to compensate toggle below)
 		}
 		else
 		{
 			_replayMoves.clear();
-			_player = _first_player;
+			if ( _move.x ) // when pre-loaded board keep player:
+				_player = !_player; // (need to compensate toggle below)
 		}
-		clearBoard();
 		redraw();
 	}
 	_player = !_player;
@@ -908,6 +907,9 @@ int Gomoku::handle( int e_ )
 		}
 		return Inherited::handle( e_ );
 	}
+	if ( _replay )
+		return Inherited::handle( e_ );
+
 	if ( e_ == FL_PUSH && _player && Fl::event_button() == 1 )
 	{
 		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
