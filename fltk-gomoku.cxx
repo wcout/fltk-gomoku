@@ -702,6 +702,8 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 		m_.value += m_.eval.has3() * 100;
 		DBG( "eval has3 " << who << " at " << m_ );
 	}
+	if ( m_.value )
+		m_.value += ( who_ == COMPUTER );
 	return m_.value;
 }
 
