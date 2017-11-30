@@ -677,28 +677,30 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 	memcpy( &board, &_board, sizeof( board ) );
 	board[m_.x][m_.y] = who_;
 	countPos( m_, board );
+	const char *who = who_ == COMPUTER ? "COMPUTER" : "PLAYER";
+
 	if ( m_.eval.wins() )
 	{
 		m_.value += 100000;
-		DBG( "eval " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) <<  " wins at " << m_ );
+		DBG( "eval " << who <<  " wins at " << m_ );
 	}
 
 	if ( m_.eval.has4() )
 	{
 		m_.value += m_.eval.has4() * 10000;
-		DBG( "eval has4 " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
+		DBG( "eval has4 " << who << " at " << m_ );
 	}
 
 	if ( m_.eval.has3Fork() )
 	{
 		m_.value += m_.eval.has3Fork() * 1000;
-		DBG( "eval has3Fork " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
+		DBG( "eval has3Fork " << who << " at " << m_ );
 	}
 
 	if ( m_.eval.has3() )
 	{
 		m_.value += m_.eval.has3() * 100;
-		DBG( "eval has3 " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
+		DBG( "eval has3 " << who << " at " << m_ );
 	}
 	return m_.value;
 }
