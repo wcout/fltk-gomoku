@@ -727,7 +727,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 {
 	if ( !_replay )
 		_moves++;
-	else if ( _debug && move_.x )
+	if ( _debug && move_.x )
 	{
 		ostringstream ss;
 		ss << "Value: " << move_.value;
