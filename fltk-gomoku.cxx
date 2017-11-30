@@ -118,7 +118,16 @@ struct Move
 		value = value_;
 		eval.init();
 	}
+	virtual std::ostream &printOn( std::ostream &os_ ) const
+	{
+		os_ << (char)( y + 'A' - 1 ) << (char)( x + 'a' - 1 ) <<
+			  " (" << x << "/" << y << ") value: " << value;
+		return os_;
+	}
 };
+
+inline std::ostream &operator<<( std::ostream &os_, const Move &m_ )
+{ return m_.printOn( os_ ); }
 
 static int count( int x_, int y_, int dx_, int dy_, PosInfo &info_,
                   const Board &board_ )
@@ -211,6 +220,7 @@ private:
 	int count( int x_, int y_, int dx_, int dy_, PosInfo& info_ ) const;
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
+	void countPos( Move &move, const Board &board_ ) const;
 	bool checkWin( int x_, int y_ ) const;
 	bool findMove( Move& move_ ) const;
 	bool randomMove( Move& move_ ) const;
@@ -571,7 +581,7 @@ void Gomoku::makeMove()
 	if ( !findMove( move ) )
 	{
 		randomMove( move );
-		DBG( "randomMove at " << move.x << "/" << move.y );
+		DBG( "randomMove at " << move );
 	}
 	while ( _pondering )
 		Fl::check();
@@ -601,6 +611,12 @@ void Gomoku::countPos( int x_, int y_, Eval &pos_ ) const
 //-------------------------------------------------------------------------------
 {
 	countPos( x_, y_, pos_, _board );
+}
+
+void Gomoku::countPos( Move& move_, const Board &board_ ) const
+//-------------------------------------------------------------------------------
+{
+	countPos( move_.x, move_.y, move_.eval, board_ );
 }
 
 bool Gomoku::checkWin( int x_, int y_ ) const
@@ -660,61 +676,59 @@ int Gomoku::eval( Move& move_ ) const
 	memcpy( &board, &_board, sizeof( board ) );
 
 	int value = 0;
-	int x = move_.x;
-	int y = move_.y;
+	Move mc( move_.x, move_.y );
 
-	board[x][y] = COMPUTER;
-	Eval ec;
-	countPos( x, y, ec, board );
-	if ( ec.wins() )
+	board[mc.x][mc.y] = COMPUTER;
+	countPos( mc, board );
+	if ( mc.eval.wins() )
 	{
-		DBG( "eval COMPUTER wins at " << x << "/" << y );
+		DBG( "eval COMPUTER wins at " << mc );
 		value += 10000;
 	}
 
-	board[x][y] = PLAYER;
-	Eval ep;
-	countPos( x, y, ep, board );
+	Move mp( move_.x, move_.y );
+	board[mp.x][mp.y] = PLAYER;
+	countPos( mp, board );
 
-	if ( ep.wins() )
+	if ( mp.eval.wins() )
 	{
-		DBG( "eval PLAYER wins at " << x << "/" << y );
+		DBG( "eval PLAYER wins at " << mp );
 		value += 9000;
 	}
 
-	if ( ec.has4() )
+	if ( mc.eval.has4() )
 	{
-		DBG( "eval has4 COMPUTER at " << x << "/" << y );
+		DBG( "eval has4 COMPUTER at " << mc );
 		value += 8000;
 	}
 
-	if ( ep.has4() )
+	if ( mp.eval.has4() )
 	{
-		DBG( "eval has4 PLAYER at " << x << "/" << y );
+		DBG( "eval has4 PLAYER at " << mp );
 		value += 7000;
 	}
 
-	if ( ec.has3Fork() )
+	if ( mc.eval.has3Fork() )
 	{
-		DBG( "eval has3Fork COMPUTER at " << x << "/" << y );
+		DBG( "eval has3Fork COMPUTER at " << mc );
 		value += 2000;
 	}
 
-	if ( ep.has3Fork() )
+	if ( mp.eval.has3Fork() )
 	{
-		DBG( "eval has3Fork PLAYER at " << x << "/" << y );
+		DBG( "eval has3Fork PLAYER at " << mp );
 		value += 1000;
 	}
 
-	if ( ec.has3() )
+	if ( mc.eval.has3() )
 	{
-		DBG( "eval has3 COMPUTER at " << x << "/" << y );
+		DBG( "eval has3 COMPUTER at " << mc );
 		value += 500;
 	}
 
-	if ( ep.has3() )
+	if ( mp.eval.has3() )
 	{
-		DBG( "eval has3 PLAYER at " << x << "/" << y );
+		DBG( "eval has3 PLAYER at " << mp );
 		value += 400;
 	}
 
