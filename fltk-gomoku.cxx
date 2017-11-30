@@ -224,6 +224,7 @@ private:
 	bool checkWin( int x_, int y_ ) const;
 	bool findMove( Move& move_ ) const;
 	bool randomMove( Move& move_ ) const;
+	int evaluate( Move& m_, int who_ ) const;
 	int eval( Move& move_ ) const;
 	void onDelay();
 	static void cb_delay( void *d_ );
@@ -669,68 +670,51 @@ bool Gomoku::findMove( Move& move_ ) const
 	return true;
 } // findMove
 
-int Gomoku::eval( Move& move_ ) const
+int Gomoku::evaluate( Move& m_, int who_ ) const
 //-------------------------------------------------------------------------------
 {
 	Board board;
 	memcpy( &board, &_board, sizeof( board ) );
-
-	int value = 0;
-	Move mc( move_.x, move_.y );
-
-	board[mc.x][mc.y] = COMPUTER;
-	countPos( mc, board );
-	if ( mc.eval.wins() )
+	board[m_.x][m_.y] = who_;
+	countPos( m_, board );
+	if ( m_.eval.wins() )
 	{
-		DBG( "eval COMPUTER wins at " << mc );
-		value += 10000;
+		m_.value += 10000;
+		DBG( "eval " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) <<  " wins at " << m_ );
 	}
+
+	if ( m_.eval.has4() )
+	{
+		m_.value += 8000;
+		DBG( "eval has4 " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
+	}
+
+	if ( m_.eval.has3Fork() )
+	{
+		m_.value += 2000;
+		DBG( "eval has3Fork " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
+	}
+
+	if ( m_.eval.has3() )
+	{
+		m_.value += 500;
+		DBG( "eval has3 " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
+	}
+	return m_.value;
+}
+
+int Gomoku::eval( Move& move_ ) const
+//-------------------------------------------------------------------------------
+{
+	Move mc( move_.x, move_.y );
+	evaluate( mc, COMPUTER );
 
 	Move mp( move_.x, move_.y );
-	board[mp.x][mp.y] = PLAYER;
-	countPos( mp, board );
+	evaluate( mp, PLAYER );
 
-	if ( mp.eval.wins() )
-	{
-		DBG( "eval PLAYER wins at " << mp );
-		value += 9000;
-	}
-
-	if ( mc.eval.has4() )
-	{
-		DBG( "eval has4 COMPUTER at " << mc );
-		value += 8000;
-	}
-
-	if ( mp.eval.has4() )
-	{
-		DBG( "eval has4 PLAYER at " << mp );
-		value += 7000;
-	}
-
-	if ( mc.eval.has3Fork() )
-	{
-		DBG( "eval has3Fork COMPUTER at " << mc );
-		value += 2000;
-	}
-
-	if ( mp.eval.has3Fork() )
-	{
-		DBG( "eval has3Fork PLAYER at " << mp );
-		value += 1000;
-	}
-
-	if ( mc.eval.has3() )
-	{
-		DBG( "eval has3 COMPUTER at " << mc );
-		value += 500;
-	}
-
-	if ( mp.eval.has3() )
-	{
-		DBG( "eval has3 PLAYER at " << mp );
-		value += 400;
-	}
+	int value = mc.value;
+	if ( mp.value > mc.value )
+		value = mp.value;
 
 	move_.value = value;
 	return value;
