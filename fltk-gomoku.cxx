@@ -81,13 +81,13 @@ struct Eval
 	{
 		return info[1].wins() || info[2].wins() || info[3].wins() || info[4].wins();
 	}
-	bool has4() const
+	int has4() const
 	{
-		return info[1].has4() || info[2].has4() || info[3].has4() || info[4].has4();
+		return info[1].has4() + info[2].has4() + info[3].has4() + info[4].has4();
 	}
-	bool has3() const
+	int has3() const
 	{
-		return info[1].has3() || info[2].has3() || info[3].has3() || info[4].has3();
+		return info[1].has3() + info[2].has3() + info[3].has3() + info[4].has3();
 	}
 	bool has3Fork() const
 	{
@@ -679,25 +679,25 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 	countPos( m_, board );
 	if ( m_.eval.wins() )
 	{
-		m_.value += 10000;
+		m_.value += 100000;
 		DBG( "eval " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) <<  " wins at " << m_ );
 	}
 
 	if ( m_.eval.has4() )
 	{
-		m_.value += 8000;
+		m_.value += m_.eval.has4() * 10000;
 		DBG( "eval has4 " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
 	}
 
 	if ( m_.eval.has3Fork() )
 	{
-		m_.value += 2000;
+		m_.value += m_.eval.has3Fork() * 1000;
 		DBG( "eval has3Fork " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
 	}
 
 	if ( m_.eval.has3() )
 	{
-		m_.value += 500;
+		m_.value += m_.eval.has3() * 100;
 		DBG( "eval has3 " << ( who_ == COMPUTER ? "COMPUTER" : "PLAYER" ) << " at " << m_ );
 	}
 	return m_.value;
