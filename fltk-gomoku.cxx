@@ -877,6 +877,7 @@ int Gomoku::handle( int e_ )
 	if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
 	{
 		_debug = !_debug;
+		_dmsg.erase();
 		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
 		redraw();
 	}
