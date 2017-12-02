@@ -64,7 +64,14 @@ struct PosInfo
 	bool wins() const { return has5(); }
 	bool canWin() const { return n + f1 + f2 >= 5 && ( f1 && f2 ); }
 	bool has4() const { return n == 4 && canWin(); }
-	bool has3() const { return n == 3 && canWin(); }
+	bool has3() const
+	{
+		return ( n == 3 && canWin() ) || ( n == 4 && single_freedom() );
+	}
+	bool single_freedom() const
+	{
+		return ( !f1 && f2 ) || ( f1 && !f2 );
+	}
 };
 
 typedef char Board[24][24];
