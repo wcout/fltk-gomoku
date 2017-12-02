@@ -724,7 +724,7 @@ int Gomoku::eval( Move& move_ ) const
 	move_.value = mc.value + mp.value;
 	if ( move_.value )
 	{
-		DBG( "combined value of " << move_ );
+		DBG( move_ << " (combined)" );
 	}
 	return move_.value;
 } // eval
