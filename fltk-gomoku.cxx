@@ -912,6 +912,7 @@ int Gomoku::handle( int e_ )
 				if ( _history.size() )
 					move = _history.back();
 				_move = move;
+				_dmsg.erase();
 				redraw();
 				if ( _debug )
 					dumpBoard();
@@ -948,6 +949,7 @@ int Gomoku::handle( int e_ )
 			if ( _history.size() )
 				move = _history.back();
 			_move = move;
+			_dmsg.erase();
 			redraw();
 			if ( _debug )
 				dumpBoard();
