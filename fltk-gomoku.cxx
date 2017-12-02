@@ -672,6 +672,8 @@ bool Gomoku::findMove( Move& move_ ) const
 		}
 	}
 	DBG( equal.size() << " moves with value " << max_value );
+	for ( size_t i = 0; i < equal.size(); i++ )
+		DBG( "\t" << equal[i] );
 	int move = random() % equal.size();
 	move_ = equal[move];
 	return true;
@@ -709,6 +711,8 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 		m_.value += m_.eval.has3() * 100;
 		DBG( "eval has3 " << who << " at " << m_ );
 	}
+	if ( m_.value )
+		m_.value += ( who_ == COMPUTER );
 	return m_.value;
 }
 
