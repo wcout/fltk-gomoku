@@ -702,8 +702,6 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 		m_.value += m_.eval.has3() * 100;
 		DBG( "eval has3 " << who << " at " << m_ );
 	}
-	if ( m_.value )
-		m_.value += ( who_ == COMPUTER );
 	return m_.value;
 }
 
@@ -716,12 +714,12 @@ int Gomoku::eval( Move& move_ ) const
 	Move mp( move_.x, move_.y );
 	evaluate( mp, PLAYER );
 
-	int value = mc.value;
-	if ( mp.value > mc.value )
-		value = mp.value;
-
-	move_.value = value;
-	return value;
+	move_.value = mc.value + mp.value;
+	if ( move_.value )
+	{
+		DBG( "combined value of " << move_ );
+	}
+	return move_.value;
 } // eval
 
 void Gomoku::setPiece( const Move& move_, int who_ )
