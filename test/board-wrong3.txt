@@ -1,0 +1,27 @@
+  a b c d e f g h i j k l m n o p q r s
+A . . . . . . . . . . . . . . . . . . . 
+B . . . . . . . . . . . . . . . . . . . 
+C . . . . . . . . . . . . . . . . . . . 
+D . . . . . . . . . . . . . . . . . . . 
+E . . . . . . p . . . . . . . . . . . . 
+F . . . . . . . c . . . . . . . . . . . 
+G . . . . . . . . c . . . . . . . . . . 
+H . . . . . . . . . c . . . . . . . . . 
+I . . . . . . . . c . c . . . . . . . . 
+J . . . . . . . p p p c p . . . . . . . 
+K . . . . . . . c p p p . . . . . . . . 
+L . . . . . . . . . c P . . . . . . . . 
+M . . . . . . . . . . . . . . . . . . . 
+N . . . . . . . . . . . . . . . . . . . 
+O . . . . . . . . . . . . . . . . . . . 
+P . . . . . . . . . . . . . . . . . . . 
+Q . . . . . . . . . . . . . . . . . . . 
+R . . . . . . . . . . . . . . . . . . . 
+S . . . . . . . . . . . . . . . . . . . 
+
+Does not place #Ih or #Ml, but
+tries to block other 3's e.g. #Jg.
+
+But better move of the two would be #Ih!
+Does not detect that currently, because of
+the gap at #Ij, but treats #Ih and #Ml same.
