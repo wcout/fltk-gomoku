@@ -127,7 +127,7 @@ struct Move
 	}
 	virtual std::ostream &printOn( std::ostream &os_ ) const
 	{
-		os_ << (char)( y + 'A' - 1 ) << (char)( x + 'a' - 1 ) <<
+		os_ << "#" << (char)( y + 'A' - 1 ) << (char)( x + 'a' - 1 ) <<
 			  " (" << x << "/" << y << ") value: " << value;
 		return os_;
 	}
@@ -750,9 +750,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		_history.push_back( move_ );
 		_move = move_;
 		_board[ move_.x ][ move_.y ] = who_;
-		DBG( "Move #" << _history.size() << ": " <<
-		     (char)( move_.y + 'A' - 1 ) << (char)( move_.x + 'a' - 1 ) <<
-			  " (" << move_.x << "/" << move_.y << ") value: " << move_.value );
+		DBG( "Move " << _history.size() << ": " <<  move_ );
 		redraw();
 	}
 	if ( _player )
