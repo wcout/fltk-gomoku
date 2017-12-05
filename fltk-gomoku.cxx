@@ -866,6 +866,8 @@ void Gomoku::wait( double delay_ )
 bool Gomoku::waitKey()
 //-------------------------------------------------------------------------------
 {
+	if ( !shown() ) // user closed program
+		return false;
 	_wait_click = true;
 	cursor( FL_CURSOR_MOVE );
 	while ( _wait_click )
