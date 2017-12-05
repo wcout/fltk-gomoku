@@ -17,6 +17,8 @@
  http://www.gnu.org/licenses/.
 
 */
+#define VERSION "v1.1"
+
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
@@ -27,6 +29,7 @@
 #include <FL/Fl_Image_Surface.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Tiled_Image.H>
+#include <FL/Fl_Menu_Button.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <vector>
@@ -285,6 +288,8 @@ private:
 	void onDelay();
 	static void cb_delay( void *d_ );
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
+	void onMenu( void *d_ );
+	static void cb_menu( Fl_Widget *w_, void *d_ );
 private:
 	int _G;
 	Board _board;
@@ -308,6 +313,8 @@ private:
 	string _message;
 	string _dmsg;
 	Args _args;
+	string _about;
+	string _abort;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -932,6 +939,36 @@ bool Gomoku::waitKey()
 	return true;
 }
 
+void Gomoku::onMenu( void *d_ )
+//-------------------------------------------------------------------------------
+{
+	if ( d_ == &_about )
+	{
+		fl_alert( "FLTK Gomoku\n"VERSION"\n\n"
+		          "A minimal implementation of the \"5 in a row\" game.\n\n"
+		"(c) 2017 wcout wcout<gmx.net>" );
+	}
+	else if ( d_ == &_abort )
+	{
+		if ( _history.size() )
+		{
+			Move first_move = _history[0];
+			_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
+		}
+		clearBoard();
+		_dmsg.erase();
+		redraw();
+		nextMove();
+	}
+}
+
+/*static*/
+void Gomoku::cb_menu( Fl_Widget *w_, void *d_ )
+//-------------------------------------------------------------------------------
+{
+	((Gomoku *)w_)->onMenu( d_ );
+}
+
 /*virtual */
 int Gomoku::handle( int e_ )
 //-------------------------------------------------------------------------------
@@ -979,7 +1016,7 @@ int Gomoku::handle( int e_ )
 	if ( _replay )
 		return Inherited::handle( e_ );
 
-	if ( e_ == FL_PUSH && _player && Fl::event_button() == 1 )
+	if ( e_ == FL_PUSH && _player && Fl::event_button() == FL_LEFT_MOUSE )
 	{
 		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 		int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
@@ -987,6 +1024,18 @@ int Gomoku::handle( int e_ )
 			setPiece( Move( x, y ), PLAYER );
 		else
 			fl_beep( FL_BEEP_ERROR );
+		return 1;
+	}
+	else if ( e_ == FL_PUSH && _player && Fl::event_button() == FL_RIGHT_MOUSE )
+	{
+		static Fl_Menu_Item play_menu[] =
+		{
+			{ "About",   0, cb_menu, &_about, FL_MENU_DIVIDER },
+			{ "Abort game",  0, cb_menu, &_abort },
+			{ 0 }
+		};
+		const Fl_Menu_Item *m = play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
+		if ( m ) m->do_callback( this, m->user_data() );
 		return 1;
 	}
 	else if ( e_ == FL_KEYDOWN && _player && Fl::event_key( FL_BackSpace ) )
