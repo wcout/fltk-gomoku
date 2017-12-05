@@ -794,6 +794,8 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 			msg << ( adraw ? "No more moves!\n\nGame ends adraw." :
 			         who_ == PLAYER ? "You managed to win!" : "FLTK wins!" ) <<
 			         endl << endl;
+			if ( !_replay )
+				_replayMoves = _history;
 		}
 		msg << stat.str();
 		DBG( msg.str() );
@@ -815,7 +817,6 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		_abortReplay = false;
 		_message.erase();
 		_dmsg.erase();
-		_replayMoves = _history;
 		_move.init();
 		Move first_move = _history[0];
 		_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
