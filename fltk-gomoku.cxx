@@ -54,19 +54,25 @@ struct PosInfo
 	int n;
 	int f1;
 	int f2;
+	int gap;
 	PosInfo() :
 		n( 0 ),
 		f1( 0 ),
-		f2( 0 )
+		f2( 0 ),
+		gap( 0 )
 	{}
-	void init() { n = 0; f1 = 0; f2 = 0; }
+	void init() { n = 0; f1 = 0; f2 = 0; gap = 0; }
 	bool has5() const { return n == 5; }
 	bool wins() const { return has5(); }
-	bool canWin() const { return n + f1 + f2 >= 5 && ( f1 && f2 ); }
-	bool has4() const { return n == 4 && canWin(); }
+	bool canWin() const { return n + f1 + f2 + gap >= 5 && ( f1 && f2 ); }
+	bool has4() const { return n == 4 && !gap && canWin(); }
 	bool has3() const
 	{
-		return ( n == 3 && canWin() ) || ( n == 4 && single_freedom() );
+		return ( n == 3 && canWin() ) || ( n == 4 && !gap && single_freedom() );
+	}
+	bool has3nogap() const
+	{
+		return ( n == 3 && !gap && canWin() ) || ( n == 4 && !gap && single_freedom() );
 	}
 	bool single_freedom() const
 	{
@@ -95,6 +101,10 @@ struct Eval
 	int has3() const
 	{
 		return info[1].has3() + info[2].has3() + info[3].has3() + info[4].has3();
+	}
+	int has3nogap() const
+	{
+		return info[1].has3nogap() + info[2].has3nogap() + info[3].has3nogap() + info[4].has3nogap();
 	}
 	bool has3Fork() const
 	{
@@ -144,45 +154,84 @@ static int count( int x_, int y_, int dx_, int dy_, PosInfo &info_,
 	int c = board_[x_][y_];
 	if ( c <= 0 )
 		return 0;
+
+	// count total pieces in row
 	info_.n = 1;
-	int x( x_ );
-	int y( y_ );
-	x += dx_;
-	y += dy_;
+	int x = x_ + dx_;
+	int y = y_ + dy_;
 	while ( board_[x][y] == c )
 	{
 		info_.n++;
 		x += dx_;
 		y += dy_;
 	}
+	// one side end position after row (not c)
+	int e1x = x;
+	int e1y = y;
+
+	x = x_ - dx_;
+	y = y_ - dy_;
+	while ( board_[x][y] == c )
+	{
+		info_.n++;
+		x -= dx_;
+		y -= dy_;
+	}
+	// if five or more everything else is unimportant
+	if ( info_.n >= 5 )
+		return info_.n;
+
+	// count freedoms and same color in each direction
+	while ( board_[x][y] == 0 )
+	{
+		info_.f2++;
+		x -= dx_;
+		y -= dy_;
+	}
+	int n2 = 0;
+	while ( board_[x][y] == c )
+	{
+		n2++;
+		x -= dx_;
+		y -= dy_;
+	}
+
+	x = e1x;
+	y = e1y;
+
 	while ( board_[x][y] == 0 )
 	{
 		info_.f1++;
 		x += dx_;
 		y += dy_;
-		if ( info_.f1 + info_.f2 + info_.n >= 5 )
-			break;
 	}
-	x = x_;
-	y = y_;
-	dx_ = -dx_;
-	dy_ = -dy_;
-	x += dx_;
-	y += dy_;
+	int n1 = 0;
 	while ( board_[x][y] == c )
 	{
-		info_.n++;
+		n1++;
 		x += dx_;
 		y += dy_;
 	}
-	while ( board_[x][y] == 0 )
+
+	//  n1  f1   n    f2   n2
+	//  o o . . o o o . . o o
+	int n = info_.n;
+	if ( info_.f1 == 1 ) // gap of 1
 	{
-		info_.f2++;
-		x += dx_;
-		y += dy_;
-		if ( info_.f1 + info_.f2 + info_.n >= 5 )
-			break;
+		int t = info_.n + 1 + n1;
+		if ( t <= 5 )
+			n = info_.n + n1;
 	}
+	if ( info_.f2 == 1 ) // gap of 1
+	{
+		int t = info_.n + 1 + n2;
+		if ( t <= 5 && t > n )
+			n = info_.n + n2;
+	}
+
+	info_.gap = n != info_.n ? 1 : 0;
+	info_.n = n;
+
 	return info_.n;
 } // count
 
@@ -706,9 +755,15 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 		DBG( "eval has3Fork " << who << " at " << m_ );
 	}
 
+	if ( m_.eval.has3nogap() )
+	{
+		m_.value += m_.eval.has3() * 200;
+		DBG( "eval has3nogap " << who << " at " << m_ );
+	}
+
 	if ( m_.eval.has3() )
 	{
-		m_.value += m_.eval.has3() * 100;
+		m_.value += m_.eval.has3() * 50;
 		DBG( "eval has3 " << who << " at " << m_ );
 	}
 	if ( m_.value )
