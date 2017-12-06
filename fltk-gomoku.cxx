@@ -138,7 +138,7 @@ struct Move
 		value = value_;
 		eval.init();
 	}
-	virtual std::ostream &printOn( std::ostream &os_ ) const
+	virtual std::ostream& printOn( std::ostream& os_ ) const
 	{
 		os_ << "#" << (char)( y + 'A' - 1 ) << (char)( x + 'a' - 1 ) <<
 			  " (" << x << "/" << y << ") value: " << value;
@@ -146,8 +146,10 @@ struct Move
 	}
 };
 
-inline std::ostream &operator<<( std::ostream &os_, const Move &m_ )
-{ return m_.printOn( os_ ); }
+std::ostream& operator<<( std::ostream &os_, const Move &m_ )
+{
+	return m_.printOn( os_ );
+}
 
 static int count( int x_, int y_, int dx_, int dy_, PosInfo &info_,
                   const Board &board_ )
@@ -285,7 +287,13 @@ private:
 	bool randomMove( Move& move_ ) const;
 	int evaluate( Move& m_, int who_ ) const;
 	int eval( Move& move_ ) const;
+	int handleGameEvent( int e_ );
+	int handleWaitClickEvent( int e_ );
+	void initPlay();
 	void onDelay();
+	bool popupMenu();
+	bool takeBackMove();
+	bool takeBackMoves();
 	static void cb_delay( void *d_ );
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 	void onMenu( void *d_ );
@@ -877,12 +885,9 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
 		_replay = answer == 1;
 		_abortReplay = false;
-		_message.erase();
-		_dmsg.erase();
-		_move.init();
-		Move first_move = _history[0];
-		_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
-		clearBoard();
+
+		initPlay();
+
 		if ( _replay )
 		{
 			_message = "Replay mode";
@@ -939,6 +944,21 @@ bool Gomoku::waitKey()
 	return true;
 }
 
+void Gomoku::initPlay()
+//-------------------------------------------------------------------------------
+{
+	_message.erase();
+	_dmsg.erase();
+	_move.init();
+	if ( _history.size() )
+	{
+		Move first_move = _history[0];
+		_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
+	}
+	clearBoard();
+	redraw();
+}
+
 void Gomoku::onMenu( void *d_ )
 //-------------------------------------------------------------------------------
 {
@@ -950,14 +970,7 @@ void Gomoku::onMenu( void *d_ )
 	}
 	else if ( d_ == &_abort )
 	{
-		if ( _history.size() )
-		{
-			Move first_move = _history[0];
-			_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
-		}
-		clearBoard();
-		_dmsg.erase();
-		redraw();
+		initPlay();
 		nextMove();
 	}
 }
@@ -969,54 +982,15 @@ void Gomoku::cb_menu( Fl_Widget *w_, void *d_ )
 	((Gomoku *)w_)->onMenu( d_ );
 }
 
-/*virtual */
-int Gomoku::handle( int e_ )
+int Gomoku::handleGameEvent( int e_ )
 //-------------------------------------------------------------------------------
 {
-	if ( e_ == FL_HIDE ) // window closed, don't block exit!
-		_wait_click = false;
-
-	if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
-	{
-		_debug = !_debug;
-		_dmsg.erase();
-		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
-		redraw();
-	}
-	if ( _wait_click )
-	{
-		if ( e_ == FL_PUSH || ( e_ == FL_KEYDOWN &&
-		     ( Fl::event_key( ' ' ) || Fl::event_key( FL_Escape ) ) ) )
-		{
-			_wait_click = false;
-			if ( Fl::event_key( FL_Escape ) )
-				_abortReplay = true;
-			return 1;
-		}
-		else if ( _replay && e_ == FL_KEYDOWN && Fl::event_key( FL_BackSpace ) )
-		{
-			if ( _history.size() )
-			{
-				Move move = _history.back();
-				_history.pop_back();
-				_board[ move.x ][ move.y ] = 0;
-				_player = !_player;
-				move.init();
-				if ( _history.size() )
-					move = _history.back();
-				_move = move;
-				_dmsg.erase();
-				redraw();
-				if ( _debug )
-					dumpBoard();
-			}
-		}
-		return Inherited::handle( e_ );
-	}
-	if ( _replay )
+	// handle events only when player's turn
+	if ( !_player )
 		return Inherited::handle( e_ );
 
-	if ( e_ == FL_PUSH && _player && Fl::event_button() == FL_LEFT_MOUSE )
+	// place a piece with left mouse button
+	if ( e_ == FL_PUSH && Fl::event_button() == FL_LEFT_MOUSE )
 	{
 		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 		int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
@@ -1026,42 +1000,19 @@ int Gomoku::handle( int e_ )
 			fl_beep( FL_BEEP_ERROR );
 		return 1;
 	}
-	else if ( e_ == FL_PUSH && _player && Fl::event_button() == FL_RIGHT_MOUSE )
+	// show menu with right button
+	else if ( e_ == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE )
 	{
-		static Fl_Menu_Item play_menu[] =
-		{
-			{ "About",   0, cb_menu, &_about, FL_MENU_DIVIDER },
-			{ "Abort game",  0, cb_menu, &_abort },
-			{ 0 }
-		};
-		const Fl_Menu_Item *m = play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
-		if ( m ) m->do_callback( this, m->user_data() );
+		popupMenu();
 		return 1;
 	}
-	else if ( e_ == FL_KEYDOWN && _player && Fl::event_key( FL_BackSpace ) )
+	else if ( e_ == FL_KEYDOWN && Fl::event_key( FL_BackSpace ) )
 	{
-		if ( _history.size() >= 2 )
-		{
-			for ( int i = 0; i < 2; i++ )
-			{
-				Move move = _history.back();
-				_history.pop_back();
-				_board[ move.x ][ move.y ] = 0;
-				_moves--;
-				DBG( "Undo move " << move.x << "/" << move.y );
-			}
-			Move move;
-			if ( _history.size() )
-				move = _history.back();
-			_move = move;
-			_dmsg.erase();
-			redraw();
-			if ( _debug )
-				dumpBoard();
-		}
+		takeBackMoves();
 	}
-	else if ( e_ == FL_MOVE && _player && _move.x )
+	else if ( e_ == FL_MOVE && _move.x )
 	{
+		// mouse moved - clear highlight on last move
 		static int moved = 0;
 		moved++;
 		if ( moved > 10 )
@@ -1072,7 +1023,95 @@ int Gomoku::handle( int e_ )
 		}
 	}
 	return Inherited::handle( e_ );
-} // handle
+}
+
+int Gomoku::handleWaitClickEvent( int e_ )
+//-------------------------------------------------------------------------------
+{
+	if ( e_ == FL_PUSH || ( e_ == FL_KEYDOWN &&
+	     ( Fl::event_key( ' ' ) || Fl::event_key( FL_Escape ) ) ) )
+	{
+		_wait_click = false;
+		if ( Fl::event_key( FL_Escape ) )
+			_abortReplay = true;
+		return 1;
+	}
+	else if ( _replay && e_ == FL_KEYDOWN && Fl::event_key( FL_BackSpace ) )
+	{
+		takeBackMove();
+	}
+	return Inherited::handle( e_ );
+}
+
+/*virtual */
+int Gomoku::handle( int e_ )
+//-------------------------------------------------------------------------------
+{
+	if ( e_ == FL_HIDE ) // window closed, don't block exit!
+		_wait_click = false;
+
+	// debug toggle is always allowed
+	if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
+	{
+		_debug = !_debug;
+		_dmsg.erase();
+		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
+		redraw();
+	}
+
+	if ( _wait_click )
+		return handleWaitClickEvent( e_ );
+
+	if ( _replay )
+		return Inherited::handle( e_ );
+
+	return handleGameEvent( e_ );
+}
+
+bool Gomoku::popupMenu()
+//-------------------------------------------------------------------------------
+{
+	// show menu and handle selection of items
+	static Fl_Menu_Item play_menu[] =
+	{
+		{ "About..",   0, cb_menu, &_about, FL_MENU_DIVIDER },
+		{ "Abort game",  0, cb_menu, &_abort },
+		{ 0 }
+	};
+	const Fl_Menu_Item *m = play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
+	if ( m ) m->do_callback( this, m->user_data() );
+	return m != 0;
+}
+
+bool Gomoku::takeBackMove()
+//-------------------------------------------------------------------------------
+{
+	// restore game to state of previous move
+	if ( _history.size() )
+	{
+		Move move = _history.back();
+		_history.pop_back();
+		_board[ move.x ][ move.y ] = 0;
+		_player = !_player;
+		move.init();
+		if ( _history.size() )
+			move = _history.back();
+		_move = move;
+		_dmsg.erase();
+		redraw();
+		if ( _debug )
+			dumpBoard();
+		return true;
+	}
+	return false;
+}
+
+bool Gomoku::takeBackMoves()
+//-------------------------------------------------------------------------------
+{
+	takeBackMove();
+	return takeBackMove();
+}
 
 void Gomoku::drawBoard( bool bg_/* = false*/ ) const
 //-------------------------------------------------------------------------------
