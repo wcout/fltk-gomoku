@@ -1032,7 +1032,7 @@ void Gomoku::onMenu( void *d_ )
 {
 	if ( d_ == &_about )
 	{
-		fl_alert( "FLTK Gomoku\n"VERSION"\n\n"
+		fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
 		          "A minimal implementation of the \"5 in a row\" game.\n\n"
 		"(c) 2017 wcout wcout<gmx.net>" );
 	}
