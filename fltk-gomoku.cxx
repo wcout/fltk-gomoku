@@ -258,6 +258,7 @@ class Gomoku : public Fl_Double_Window
 public:
 	Gomoku( int argc_ = 0, char *argv_[] = 0 );
 	~Gomoku();
+	void about();
 	void clearBoard();
 	void loadBoardFromFile( const string& f_ );
 	void saveBoardToFile( const string& f_ ) const;
@@ -873,14 +874,19 @@ int Gomoku::eval( Move& move_ ) const
 void Gomoku::setPiece( const Move& move_, int who_ )
 //-------------------------------------------------------------------------------
 {
+	// update move counter
 	if ( !_replay )
 		_moves++;
+
+	// show value of move if in debug mode
 	if ( _debug && move_.x )
 	{
 		ostringstream ss;
 		ss << "Value: " << move_.value;
 		_dmsg = ss.str();
 	}
+
+	// if no move was found by computer it has generated an "empty" move
 	bool adraw = ( move_.x ==  0 || move_.y == 0 );
 	if ( !adraw )
 	{
@@ -890,15 +896,18 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		DBG( "Move " << _history.size() << ": " <<  move_ );
 		redraw();
 	}
+
+	// check for board full *after* move
 	if ( _player )
 	{
 		Move move;
-		adraw = !randomMove( move );
+		adraw = !randomMove( move ); // try a move - will fail if board full
 	}
 	if ( _debug )
 		dumpBoard();
 	if ( adraw || checkWin( move_.x, move_.y ) )
 	{
+		// this game is finished (either by adraw or someone has won)
 		if ( !_replay )
 		{
 			// update game stats
@@ -914,6 +923,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		wait( 0.5 );
 		fl_beep( FL_BEEP_MESSAGE );
 
+		// prepare the right message
 		ostringstream stat;
 		if ( _replay )
 		{
@@ -936,6 +946,8 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		}
 		msg << stat.str();
 		DBG( msg.str() );
+
+		// show message
 		if ( _alert )
 		{
 			fl_alert( "%s", msg.str().c_str() );
@@ -946,9 +958,11 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 			redraw();
 		}
 
+		// wait for a key (click)
 		if ( !waitKey() )
 			return;
 
+		// query for replay
 		int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
 		_replay = answer == 1;
 		_abortReplay = false;
@@ -968,6 +982,8 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		}
 		redraw();
 	}
+
+	// trigger next move
 	_player = !_player;
 	nextMove();
 } // setPiece
@@ -1027,14 +1043,20 @@ void Gomoku::initPlay()
 	redraw();
 }
 
+void Gomoku::about()
+//-------------------------------------------------------------------------------
+{
+	fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
+	          "A minimal implementation of the \"5 in a row\" game.\n\n"
+	"(c) 2017 wcout wcout<gmx.net>" );
+}
+
 void Gomoku::onMenu( void *d_ )
 //-------------------------------------------------------------------------------
 {
 	if ( d_ == &_about )
 	{
-		fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
-		          "A minimal implementation of the \"5 in a row\" game.\n\n"
-		"(c) 2017 wcout wcout<gmx.net>" );
+		about();
 	}
 	else if ( d_ == &_abort )
 	{
@@ -1301,8 +1323,8 @@ void Gomoku::draw()
 	//        a background clip the bg image to board size.
 	fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
 
-	bool bg = child(0)->image();
-	if ( bg )
+	bool bgImage = child(0)->image();
+	if ( bgImage )
 	{
 		int W = xp( _G + 2 );
 		fl_push_clip( 0, 0, W, W );
@@ -1311,7 +1333,7 @@ void Gomoku::draw()
 	}
 
 	// draw board
-	drawBoard( !bg );
+	drawBoard( !bgImage );
 
 	// draw pieces
 	for ( int x = 1; x <= _G + 1; x++ )
