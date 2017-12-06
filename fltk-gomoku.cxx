@@ -1004,7 +1004,7 @@ bool Gomoku::waitKey()
 		return false;
 	_wait_click = true;
 	cursor( FL_CURSOR_MOVE );
-	while ( _wait_click )
+	while ( _wait_click && !_abortReplay )
 		Fl::check();
 	if ( !shown() ) // user closed program
 		return false;
@@ -1017,6 +1017,7 @@ void Gomoku::initPlay()
 	_message.erase();
 	_dmsg.erase();
 	_move.init();
+	_wait_click = false;
 	if ( _history.size() )
 	{
 		Move first_move = _history[0];
@@ -1059,6 +1060,11 @@ void Gomoku::onMenu( void *d_ )
 		if ( fname )
 			saveBoardToFile( fname );
 	}
+	else if ( d_ == &_abortReplay )
+	{
+		_abortReplay = true;
+		_wait_click = false;
+	}
 }
 
 /*static*/
@@ -1086,12 +1092,6 @@ int Gomoku::handleGameEvent( int e_ )
 			fl_beep( FL_BEEP_ERROR );
 		return 1;
 	}
-	// show menu with right button
-	else if ( e_ == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE )
-	{
-		popupMenu();
-		return 1;
-	}
 	else if ( e_ == FL_KEYDOWN && Fl::event_key( FL_BackSpace ) )
 	{
 		takeBackMoves();
@@ -1114,8 +1114,9 @@ int Gomoku::handleGameEvent( int e_ )
 int Gomoku::handleWaitClickEvent( int e_ )
 //-------------------------------------------------------------------------------
 {
-	if ( e_ == FL_PUSH || ( e_ == FL_KEYDOWN &&
-	     ( Fl::event_key( ' ' ) || Fl::event_key( FL_Escape ) ) ) )
+	if ( ( e_ == FL_PUSH && Fl::event_button() == FL_LEFT_MOUSE ) ||
+	     ( e_ == FL_KEYDOWN && ( Fl::event_key( ' ' ) ||
+	                             Fl::event_key( FL_Escape ) ) ) )
 	{
 		_wait_click = false;
 		if ( Fl::event_key( FL_Escape ) )
@@ -1144,6 +1145,12 @@ int Gomoku::handle( int e_ )
 		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
 		redraw();
 	}
+	// show menu with right button
+	else if ( e_ == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE )
+	{
+		popupMenu();
+		return 1;
+	}
 
 	if ( _wait_click )
 		return handleWaitClickEvent( e_ );
@@ -1167,7 +1174,15 @@ bool Gomoku::popupMenu()
 		{ "Save board..",  0, cb_menu, &_saveBoard },
 		{ 0 }
 	};
-	const Fl_Menu_Item *m = play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
+	static Fl_Menu_Item replay_menu[] =
+	{
+		{ "Abort replay",  0, cb_menu, &_abortReplay },
+		{ "Save board..",  0, cb_menu, &_saveBoard },
+		{ 0 }
+	};
+	const Fl_Menu_Item *m = _replay ?
+		replay_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 ) :
+		play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
 	if ( m ) m->do_callback( this, m->user_data() );
 	return m != 0;
 }
