@@ -1186,8 +1186,8 @@ int Gomoku::handle( int e_ )
 bool Gomoku::popupMenu()
 //-------------------------------------------------------------------------------
 {
-	// show menu and handle selection of items
-	static Fl_Menu_Item play_menu[] =
+	// display menu and handle selection of items
+	static Fl_Menu_Item game_menu[] =
 	{
 		{ "About..",   0, cb_menu, &_about, FL_MENU_DIVIDER },
 		{ "Abort game",  0, cb_menu, &_abort },
@@ -1202,11 +1202,18 @@ bool Gomoku::popupMenu()
 		{ "Save board..",  0, cb_menu, &_saveBoard },
 		{ 0 }
 	};
-	const Fl_Menu_Item *m = _replay ?
-		replay_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 ) :
-		play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
-	if ( m ) m->do_callback( this, m->user_data() );
-	return m != 0;
+	// some tuning of menu display
+	Fl_Menu_Item *menu = _replay ? replay_menu : game_menu;
+	string title = _replay ? "replay" : "game";
+	Fl_Menu_Button ref( 0, 0, 0, 0  );
+	int ts = yp( 1 ) / 2;
+	if ( ref.textsize() < ts )
+		ref.textsize( ts );
+	// show it
+	const Fl_Menu_Item *item = menu->popup( Fl::event_x(), Fl::event_y(),
+		title.c_str(), 0, &ref );
+	if ( item ) item->do_callback( this, item->user_data() );
+	return item != 0;
 }
 
 bool Gomoku::takeBackMove()
