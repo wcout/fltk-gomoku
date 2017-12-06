@@ -259,6 +259,7 @@ public:
 	Gomoku( int argc_ = 0, char *argv_[] = 0 );
 	~Gomoku();
 	void about();
+	void abortGame();
 	void clearBoard();
 	void loadBoardFromFile( const string& f_ );
 	void saveBoardToFile( const string& f_ ) const;
@@ -329,10 +330,11 @@ private:
 	string _bgImageFile;
 	Args _args;
 	string _about;
-	string _abort;
+	string _abortGame;
 	string _loadBgImage;
 	string _clearBgImage;
 	string _saveBoard;
+	string _loadBoard;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -1040,6 +1042,7 @@ void Gomoku::initPlay()
 		_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
 	}
 	clearBoard();
+	_args.boardFile.erase(); // use pre-loaded board only once!
 	redraw();
 }
 
@@ -1051,6 +1054,13 @@ void Gomoku::about()
 	"(c) 2017 wcout wcout<gmx.net>" );
 }
 
+void Gomoku::abortGame()
+//-------------------------------------------------------------------------------
+{
+	initPlay();
+	nextMove();
+}
+
 void Gomoku::onMenu( void *d_ )
 //-------------------------------------------------------------------------------
 {
@@ -1058,10 +1068,9 @@ void Gomoku::onMenu( void *d_ )
 	{
 		about();
 	}
-	else if ( d_ == &_abort )
+	else if ( d_ == &_abortGame )
 	{
-		initPlay();
-		nextMove();
+		abortGame();
 	}
 	else if ( d_ == &_loadBgImage )
 	{
@@ -1081,6 +1090,17 @@ void Gomoku::onMenu( void *d_ )
 			"*.{txt}", fname  );
 		if ( fname )
 			saveBoardToFile( fname );
+	}
+	else if ( d_ == &_loadBoard )
+	{
+		static char *fname = 0;
+		fname = fl_file_chooser( "Load board from file",
+			"*.{txt}", fname  );
+		if ( fname )
+		{
+			_args.boardFile = fname;
+			abortGame();
+		}
 	}
 	else if ( d_ == &_abortReplay )
 	{
@@ -1116,7 +1136,8 @@ int Gomoku::handleGameEvent( int e_ )
 	}
 	else if ( e_ == FL_KEYDOWN && Fl::event_key( FL_BackSpace ) )
 	{
-		takeBackMoves();
+		if ( !takeBackMoves() )
+			nextMove();
 	}
 	else if ( e_ == FL_MOVE && _move.x )
 	{
@@ -1190,10 +1211,11 @@ bool Gomoku::popupMenu()
 	static Fl_Menu_Item game_menu[] =
 	{
 		{ "About..",   0, cb_menu, &_about, FL_MENU_DIVIDER },
-		{ "Abort game",  0, cb_menu, &_abort },
+		{ "Abort game",  0, cb_menu, &_abortGame },
 		{ "Load board image..",  0, cb_menu, &_loadBgImage },
 		{ "Remove board image",  0, cb_menu, &_clearBgImage, FL_MENU_DIVIDER },
 		{ "Save board..",  0, cb_menu, &_saveBoard },
+		{ "Load board..",  0, cb_menu, &_loadBoard },
 		{ 0 }
 	};
 	static Fl_Menu_Item replay_menu[] =
@@ -1242,7 +1264,8 @@ bool Gomoku::takeBackMove()
 bool Gomoku::takeBackMoves()
 //-------------------------------------------------------------------------------
 {
-	takeBackMove();
+	if ( !takeBackMove() )
+		return true;
 	return takeBackMove();
 }
 
