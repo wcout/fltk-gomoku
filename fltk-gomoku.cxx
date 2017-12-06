@@ -843,7 +843,7 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 		DBG( "eval has3nogap " << who << " at " << m_ );
 	}
 
-	if ( m_.eval.has3() )
+	else if ( m_.eval.has3() )
 	{
 		m_.value += m_.eval.has3() * 50;
 		DBG( "eval has3 " << who << " at " << m_ );
