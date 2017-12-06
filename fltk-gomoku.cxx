@@ -30,6 +30,7 @@
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Tiled_Image.H>
 #include <FL/Fl_Menu_Button.H>
+#include <FL/Fl_File_Chooser.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <vector>
@@ -265,12 +266,15 @@ public:
 	void wait( double delay_ );
 	virtual int handle( int e_ );
 	virtual void draw();
+	bool clearBgImage();
+	bool loadBgImage( const string& bgImageFile_ );
 protected:
 	void drawBoard( bool bg_ = false ) const;
 	void drawPiece( int color_, int x_, int y_ ) const;
 	void nextMove();
 	void setIcon();
 	void parseArgs( int argc_, char *argv_[] );
+	void setBgImage( Fl_Image *bgTile_ );
 	bool waitKey();
 private:
 	int xp( int x_ ) const;
@@ -320,9 +324,12 @@ private:
 	Fl_Preferences *_cfg;
 	string _message;
 	string _dmsg;
+	string _bgImageFile;
 	Args _args;
 	string _about;
 	string _abort;
+	string _loadBgImage;
+	string _clearBgImage;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -343,19 +350,25 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 //-------------------------------------------------------------------------------
 {
 	parseArgs( argc_, argv_ );
+
+	// Widget for background graphics
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
 	end();
 	bg->box( FL_FLAT_BOX );
 
+	fl_message_title_default( label() );
+
 	_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
-	char *bg_image;
-	_cfg->get( "bg_image", bg_image, "bg.gif" );
+
+	// load board image
+	char *temp;
+	_cfg->get( "bg_image", temp, "bg.gif" );
+	string bgImageFile( temp );
+	free( temp );
+
 	if ( _args.bgImageFile.size() )
-		bg_image = strdup( _args.bgImageFile.c_str() ); // overrule by cmd line arg
-	Fl_Image *bg_tile = Fl_Shared_Image::get( bg_image );
-	if ( bg_tile && bg_tile->w() > 0 && bg_tile->h() > 0 )
-		bg->image( new Fl_Tiled_Image( bg_tile ) );
-	free( bg_image );
+		bgImageFile = _args.bgImageFile.c_str(); // overrule by cmd line arg
+	loadBgImage( bgImageFile );
 
 	int W, X, Y;
 	_cfg->get( "games", _games, 0 );
@@ -370,7 +383,6 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_cfg->get( "debug", _debug, _debug );
 	_cfg->get( "alert", _alert, _alert );
 
-	fl_message_title_default( label() );
 	clearBoard();
 	resizable( this );
 	size_range( ( _G + 2 ) * 10, ( _G + 2 ) * 10, 0, 0, ( _G + 2 ), ( _G + 2 ), 1 );
@@ -379,6 +391,50 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	setIcon();
 	show();
 	nextMove();
+}
+
+void Gomoku::setBgImage( Fl_Image *bgTile_ )
+//-------------------------------------------------------------------------------
+{
+	Fl_Widget *bg = child( 0 );
+	if ( bg->image() )
+	{
+		Fl_Tiled_Image *bgTile = (Fl_Tiled_Image *)bg->image();
+		Fl_Shared_Image *shImage = (Fl_Shared_Image *)bgTile->image();
+		delete bg->image();
+		shImage->release();
+	}
+	bg->image( bgTile_ ? new Fl_Tiled_Image( bgTile_ ) : 0 );
+	redraw();
+	_cfg->set( "bg_image", _bgImageFile.c_str() );
+}
+
+bool Gomoku::loadBgImage( const string& bgImageFile_ )
+//-------------------------------------------------------------------------------
+{
+	// load board image and set it as tile
+	if ( bgImageFile_.empty() )
+		return false;
+	Fl_Shared_Image *bg_tile = Fl_Shared_Image::get( bgImageFile_.c_str() );
+	if ( bg_tile && bg_tile->w() > 0 && bg_tile->h() > 0 )
+	{
+		_bgImageFile = bgImageFile_;
+		setBgImage( bg_tile );
+		return true;
+	}
+	else if ( bg_tile )
+	{
+		bg_tile->release();
+	}
+	return false;
+}
+
+bool Gomoku::clearBgImage()
+//-------------------------------------------------------------------------------
+{
+	_bgImageFile.erase();
+	setBgImage( 0 );
+	return true;
 }
 
 void Gomoku::nextMove()
@@ -973,6 +1029,17 @@ void Gomoku::onMenu( void *d_ )
 		initPlay();
 		nextMove();
 	}
+	else if ( d_ == &_loadBgImage )
+	{
+		const char *fname = fl_file_chooser( "Load board background image",
+			"*.{bm,bmp,gif,jpg,pbm,pgm,png,ppm,xbm,xpm}", _bgImageFile.c_str() );
+		if ( fname )
+			loadBgImage( fname );
+	}
+	else if ( d_ == &_clearBgImage )
+	{
+		clearBgImage();
+	}
 }
 
 /*static*/
@@ -1076,6 +1143,8 @@ bool Gomoku::popupMenu()
 	{
 		{ "About..",   0, cb_menu, &_about, FL_MENU_DIVIDER },
 		{ "Abort game",  0, cb_menu, &_abort },
+		{ "Load board image..",  0, cb_menu, &_loadBgImage },
+		{ "Remove board image",  0, cb_menu, &_clearBgImage },
 		{ 0 }
 	};
 	const Fl_Menu_Item *m = play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
