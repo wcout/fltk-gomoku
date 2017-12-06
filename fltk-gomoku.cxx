@@ -260,7 +260,8 @@ public:
 	~Gomoku();
 	void clearBoard();
 	void loadBoardFromFile( const string& f_ );
-	void dumpBoard() const;
+	void saveBoardToFile( const string& f_ ) const;
+	void dumpBoard( ostream& ofs_ = std::cout ) const;
 	void makeMove();
 	void setPiece( const Move& move_, int who_ );
 	void wait( double delay_ );
@@ -330,6 +331,7 @@ private:
 	string _abort;
 	string _loadBgImage;
 	string _clearBgImage;
+	string _saveBoard;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -545,27 +547,36 @@ void Gomoku::loadBoardFromFile( const string& f_ )
 	_move = last_move;
 }
 
-void Gomoku::dumpBoard() const
+void Gomoku::dumpBoard( ostream& ofs_/* = std::cout*/ ) const
 //-------------------------------------------------------------------------------
 {
-	cout << " ";
+	ofs_ << " ";
 	for ( int x = 1; x <= _G + 1; x++ )
-		cout << " " << (char)('a' + x - 1);
-	cout << endl;
+		ofs_ << " " << (char)('a' + x - 1);
+	ofs_ << endl;
 	for ( int y = 1; y <= _G + 1; y++ )
 	{
-		cout << (char)('A' + y - 1) << " ";
+		ofs_ << (char)('A' + y - 1) << " ";
 		for ( int x = 1; x <= _G + 1; x++ )
 		{
 			int who = _board[x][y];
 			bool last = x == _move.x && y == _move.y;
 			char player = last ? 'P' : 'p';
 			char computer = last ? 'C' : 'c';
-			cout << ( who ? ( who == PLAYER ? player  : computer ) : '.' ) << ' ';
+			ofs_ << ( who ? ( who == PLAYER ? player  : computer ) : '.' ) << ' ';
 		}
-		cout << endl;
+		ofs_ << endl;
 	}
-	cout << endl;
+	ofs_ << endl;
+}
+
+void Gomoku::saveBoardToFile( const string& f_ ) const
+//-------------------------------------------------------------------------------
+{
+	ofstream ofs( f_.c_str() );
+	if ( !ofs.is_open() )
+		return;
+	dumpBoard( ofs );
 }
 
 int Gomoku::xp( int x_ ) const
@@ -1040,6 +1051,14 @@ void Gomoku::onMenu( void *d_ )
 	{
 		clearBgImage();
 	}
+	else if ( d_ == &_saveBoard )
+	{
+		static char *fname = 0;
+		fname = fl_file_chooser( "Save board to file",
+			"*.{txt}", fname  );
+		if ( fname )
+			saveBoardToFile( fname );
+	}
 }
 
 /*static*/
@@ -1144,7 +1163,8 @@ bool Gomoku::popupMenu()
 		{ "About..",   0, cb_menu, &_about, FL_MENU_DIVIDER },
 		{ "Abort game",  0, cb_menu, &_abort },
 		{ "Load board image..",  0, cb_menu, &_loadBgImage },
-		{ "Remove board image",  0, cb_menu, &_clearBgImage },
+		{ "Remove board image",  0, cb_menu, &_clearBgImage, FL_MENU_DIVIDER },
+		{ "Save board..",  0, cb_menu, &_saveBoard },
 		{ 0 }
 	};
 	const Fl_Menu_Item *m = play_menu->popup( Fl::event_x(), Fl::event_y(), 0, 0, 0 );
