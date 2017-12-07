@@ -1197,6 +1197,7 @@ int Gomoku::handleGameEvent( int e_ )
 		{
 			_move.x = 0;
 			moved = 0;
+			_message.erase();
 			redraw();
 		}
 	}
