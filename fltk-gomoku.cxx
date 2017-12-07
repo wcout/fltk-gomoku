@@ -44,8 +44,6 @@
 using namespace std;
 
 static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
-//static const Fl_Color FL_LIGHT_YELLOW = fl_lighter( FL_YELLOW );
-//static const Fl_Color FL_BROWN = fl_rgb_color( 0x67, 0x4d, 0x0f );
 static const Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
 static const Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 static const char PLAYER = 1;
@@ -323,12 +321,13 @@ private:
 	vector<Move> _history;
 	vector<Move> _replayMoves;
 	int _debug; // Note: using int instead of bool for signature of preferences
-	int _alert; // Nite: as above
+	int _alert; // Note: as above
 	Fl_Preferences *_cfg;
 	string _message;
 	string _dmsg;
 	string _bgImageFile;
 	Args _args;
+	// Note: this variables are only used as adresses for menu items
 	string _about;
 	string _abortGame;
 	string _loadBgImage;
