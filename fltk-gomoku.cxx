@@ -1113,7 +1113,7 @@ void Gomoku::onMenu( void *d_ )
 void Gomoku::cb_menu( Fl_Widget *w_, void *d_ )
 //-------------------------------------------------------------------------------
 {
-	((Gomoku *)w_)->onMenu( d_ );
+	(static_cast<Gomoku *>(w_))->onMenu( d_ );
 }
 
 int Gomoku::handleGameEvent( int e_ )
