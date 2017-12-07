@@ -31,6 +31,7 @@
 #include <FL/Fl_Tiled_Image.H>
 #include <FL/Fl_Menu_Button.H>
 #include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_Color_Chooser.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <vector>
@@ -44,10 +45,12 @@
 using namespace std;
 
 static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
-static const Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
-static const Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 static const char PLAYER = 1;
 static const char COMPUTER = 2;
+
+static Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
+static Fl_Color BOARD_GRID_COLOR = FL_BLACK;
+
 
 //-------------------------------------------------------------------------------
 struct PosInfo
@@ -275,6 +278,9 @@ protected:
 	void nextMove();
 	void setIcon();
 	void parseArgs( int argc_, char *argv_[] );
+	void selectColor( const string& prompt_, Fl_Color& color_, const string& id_ );
+	void selectBoardColor();
+	void selectGridColor();
 	void setBgImage( Fl_Image *bgTile_ );
 	bool waitKey();
 private:
@@ -334,6 +340,8 @@ private:
 	string _clearBgImage;
 	string _saveBoard;
 	string _loadBoard;
+	string _boardColor;
+	string _gridColor;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -386,6 +394,13 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 
 	_cfg->get( "debug", _debug, _debug );
 	_cfg->get( "alert", _alert, _alert );
+
+	int board_color = (int)BOARD_COLOR;
+	_cfg->get( "board_color", board_color, board_color );
+	int grid_color = (int)BOARD_GRID_COLOR;
+	_cfg->get( "grid_color",  grid_color, grid_color );
+	BOARD_COLOR = (Fl_Color)board_color;
+	BOARD_GRID_COLOR = (Fl_Color)grid_color;
 
 	clearBoard();
 	resizable( this );
@@ -1060,6 +1075,33 @@ void Gomoku::abortGame()
 	nextMove();
 }
 
+void Gomoku::selectColor( const string& prompt_, Fl_Color& color_, const string& id_ )
+//-------------------------------------------------------------------------------
+{
+	uchar r = 0xff, g = 0xff, b = 0xff;
+
+	Fl::get_color( color_, r, g, b );
+
+	if ( fl_color_chooser( prompt_.c_str(), r, g, b, 1 /*byte*/) )
+	{
+		color_ = fl_rgb_color( r, g, b );
+		_cfg->set( id_.c_str(), (int)color_ );
+		redraw();
+	}
+}
+
+void Gomoku::selectBoardColor()
+//-------------------------------------------------------------------------------
+{
+	selectColor( "Select board color:", BOARD_COLOR, "board_color" );
+}
+
+void Gomoku::selectGridColor()
+//-------------------------------------------------------------------------------
+{
+	selectColor( "Select board grid color:", BOARD_GRID_COLOR, "grid_color" );
+}
+
 void Gomoku::onMenu( void *d_ )
 //-------------------------------------------------------------------------------
 {
@@ -1105,6 +1147,14 @@ void Gomoku::onMenu( void *d_ )
 	{
 		_abortReplay = true;
 		_wait_click = false;
+	}
+	else if ( d_ == &_boardColor )
+	{
+		selectBoardColor();
+	}
+	else if ( d_ == &_gridColor )
+	{
+		selectGridColor();
 	}
 }
 
@@ -1212,7 +1262,9 @@ bool Gomoku::popupMenu()
 		{ "About..",   0, cb_menu, &_about, FL_MENU_DIVIDER },
 		{ "Abort game",  0, cb_menu, &_abortGame },
 		{ "Load board image..",  0, cb_menu, &_loadBgImage },
-		{ "Remove board image",  0, cb_menu, &_clearBgImage, FL_MENU_DIVIDER },
+		{ "Remove board image",  0, cb_menu, &_clearBgImage },
+		{ "Board color..",  0, cb_menu, &_boardColor },
+		{ "Board grid color..",  0, cb_menu, &_gridColor, FL_MENU_DIVIDER },
 		{ "Save board..",  0, cb_menu, &_saveBoard },
 		{ "Load board..",  0, cb_menu, &_loadBoard },
 		{ 0 }
@@ -1293,7 +1345,6 @@ void Gomoku::drawBoard( bool bg_/* = false*/ ) const
 	if ( xp( 1 ) > 8 )
 	{
 		int r = ceil( (double)xp( 1 ) / 12 );
-		fl_color( FL_BLACK );
 		fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1 ), r );
 		fl_circle( xp( _G / 4 + 1 ), yp( _G / 4 + 1 ), r );
 		fl_circle( xp( _G / 4 + 1 ), yp( _G / 2 + 1 ), r );
