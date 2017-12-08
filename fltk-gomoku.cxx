@@ -368,11 +368,13 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	end();
 	bg->box( FL_FLAT_BOX );
 
+	setIcon(); // set icon from "default look"
+
 	fl_message_title_default( label() );
 
 	_cfg = new Fl_Preferences( Fl_Preferences::USER, "CG", "fltk-gomoku" );
 
-	// load board image
+	// load/use values from config file
 	char *temp;
 	_cfg->get( "bg_image", temp, "bg.gif" );
 	string bgImageFile( temp );
@@ -402,13 +404,12 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	BOARD_COLOR = (Fl_Color)board_color;
 	BOARD_GRID_COLOR = (Fl_Color)grid_color;
 
-	clearBoard();
 	resizable( this );
 	size_range( ( _G + 2 ) * 10, ( _G + 2 ) * 10, 0, 0, ( _G + 2 ), ( _G + 2 ), 1 );
-
 	resize( X, Y, W, W );
-	setIcon();
 	show();
+
+	clearBoard();
 	nextMove();
 }
 
