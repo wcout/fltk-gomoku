@@ -398,7 +398,7 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	int board_color = (int)BOARD_COLOR;
 	_cfg->get( "board_color", board_color, board_color );
 	int grid_color = (int)BOARD_GRID_COLOR;
-	_cfg->get( "grid_color",  grid_color, grid_color );
+	_cfg->get( "grid_color", grid_color, grid_color );
 	BOARD_COLOR = (Fl_Color)board_color;
 	BOARD_GRID_COLOR = (Fl_Color)grid_color;
 
@@ -504,9 +504,13 @@ void Gomoku::parseArgs( int argc_, char *argv_[] )
 		string arg = argv_[i];
 		if ( arg == "-b" )
 		{
-			i++;
-			if ( i < argc_ )
+			if ( ++i < argc_ )
 				_args.boardFile = argv_[i];
+		}
+		else if ( arg == "-s" || arg == "-scheme" )
+		{
+			if ( ++i < argc_ )
+				Fl::scheme( argv_[i] );
 		}
 		else if ( arg[0] != '-' )
 		{
@@ -903,7 +907,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 	}
 
 	// if no move was found by computer it has generated an "empty" move
-	bool adraw = ( move_.x ==  0 || move_.y == 0 );
+	bool adraw = ( move_.x == 0 || move_.y == 0 );
 	if ( !adraw )
 	{
 		_history.push_back( move_ );
@@ -1128,7 +1132,7 @@ void Gomoku::onMenu( void *d_ )
 	{
 		static char *fname = 0;
 		fname = fl_file_chooser( "Save board to file",
-			"*.{txt}", fname  );
+			"*.{txt}", fname );
 		if ( fname )
 			saveBoardToFile( fname );
 	}
@@ -1136,7 +1140,7 @@ void Gomoku::onMenu( void *d_ )
 	{
 		static char *fname = 0;
 		fname = fl_file_chooser( "Load board from file",
-			"*.{txt}", fname  );
+			"*.{txt}", fname );
 		if ( fname )
 		{
 			_args.boardFile = fname;
@@ -1260,26 +1264,26 @@ bool Gomoku::popupMenu()
 	// display menu and handle selection of items
 	static Fl_Menu_Item game_menu[] =
 	{
-		{ "About..",   0, cb_menu, &_about, FL_MENU_DIVIDER },
-		{ "Abort game",  0, cb_menu, &_abortGame },
-		{ "Load board image..",  0, cb_menu, &_loadBgImage },
-		{ "Remove board image",  0, cb_menu, &_clearBgImage },
-		{ "Board color..",  0, cb_menu, &_boardColor },
-		{ "Board grid color..",  0, cb_menu, &_gridColor, FL_MENU_DIVIDER },
-		{ "Save board..",  0, cb_menu, &_saveBoard },
-		{ "Load board..",  0, cb_menu, &_loadBoard },
+		{ "About..", 0, cb_menu, &_about, FL_MENU_DIVIDER },
+		{ "Abort game", 0, cb_menu, &_abortGame },
+		{ "Load board image..", 0, cb_menu, &_loadBgImage },
+		{ "Remove board image", 0, cb_menu, &_clearBgImage },
+		{ "Board color..", 0, cb_menu, &_boardColor },
+		{ "Board grid color..", 0, cb_menu, &_gridColor, FL_MENU_DIVIDER },
+		{ "Save board..", 0, cb_menu, &_saveBoard },
+		{ "Load board..", 0, cb_menu, &_loadBoard },
 		{ 0 }
 	};
 	static Fl_Menu_Item replay_menu[] =
 	{
-		{ "Abort replay",  0, cb_menu, &_abortReplay },
-		{ "Save board..",  0, cb_menu, &_saveBoard },
+		{ "Abort replay", 0, cb_menu, &_abortReplay },
+		{ "Save board..", 0, cb_menu, &_saveBoard },
 		{ 0 }
 	};
 	// some tuning of menu display
 	Fl_Menu_Item *menu = _replay ? replay_menu : game_menu;
 	string title = _replay ? "replay" : "game";
-	Fl_Menu_Button ref( 0, 0, 0, 0  );
+	Fl_Menu_Button ref( 0, 0, 0, 0 );
 	int ts = yp( 1 ) / 2;
 	if ( ref.textsize() < ts )
 		ref.textsize( ts );
