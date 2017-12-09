@@ -295,6 +295,7 @@ private:
 	void countPos( Move &move, const Board &board_ ) const;
 	bool checkWin( int x_, int y_ ) const;
 	bool findMove( Move& move_ ) const;
+	void gameFinished( int winner_ );
 	bool randomMove( Move& move_ ) const;
 	int evaluate( Move& m_, int who_ ) const;
 	int eval( Move& move_ ) const;
@@ -892,6 +893,89 @@ int Gomoku::eval( Move& move_ ) const
 	return move_.value;
 } // eval
 
+void Gomoku::gameFinished( int winner_ )
+//-------------------------------------------------------------------------------
+{
+	// this game is finished, either by adraw or someone has won.
+	// (winner_ will be 0 if adraw, otherwise PLAYER or COMPUTER)
+	bool adraw = !winner_;
+	if ( !_replay )
+	{
+		// update game stats
+		_games++;
+		if ( !adraw )
+		{
+			winner_ == PLAYER ? _player_wins++ : _computer_wins++;
+		}
+		_cfg->set( "games", _games );
+		_cfg->set( "moves", _moves );
+		_cfg->set( "player_wins", _player_wins );
+		_cfg->set( "computer_wins", _computer_wins );
+		_cfg->flush();
+	}
+	wait( 0.5 );
+	fl_beep( FL_BEEP_MESSAGE );
+
+	// prepare the right message
+	ostringstream stat;
+	if ( _replay )
+	{
+		stat << "** Replay end **";
+	}
+	else
+	{
+		stat << _games << " games - " <<
+		_player_wins << " : " << _computer_wins <<
+		endl << "(average moves: " << _moves / _games << ")";
+	}
+	ostringstream msg;
+	if ( !_abortReplay )
+	{
+		msg << ( adraw ? "No more moves!\n\nGame ends adraw." :
+		         winner_ == PLAYER ? "You managed to win!" : "FLTK wins!" ) <<
+		         endl << endl;
+		if ( !_replay )
+			_replayMoves = _history;
+	}
+	msg << stat.str();
+	DBG( msg.str() );
+
+	// show message
+	if ( _alert )
+	{
+		fl_alert( "%s", msg.str().c_str() );
+	}
+	else
+	{
+		_message = msg.str();
+		redraw();
+	}
+
+	// wait for a key (click)
+	if ( !waitKey() )
+		return;
+
+	// query for replay
+	int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
+	_replay = answer == 1;
+	_abortReplay = false;
+
+	initPlay();
+
+	if ( _replay )
+	{
+		_message = "Replay mode";
+		_player = !_player; // (need to compensate toggle below)
+	}
+	else
+	{
+		_replayMoves.clear();
+		if ( _move.x ) // when pre-loaded board keep player:
+			_player = !_player; // (need to compensate toggle below)
+	}
+	redraw();
+}
+
 void Gomoku::setPiece( const Move& move_, int who_ )
 //-------------------------------------------------------------------------------
 {
@@ -926,82 +1010,10 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 	}
 	if ( _debug )
 		dumpBoard();
+
 	if ( adraw || checkWin( move_.x, move_.y ) )
 	{
-		// this game is finished (either by adraw or someone has won)
-		if ( !_replay )
-		{
-			// update game stats
-			_games++;
-			if ( !adraw )
-				who_ == PLAYER ? _player_wins++ : _computer_wins++;
-			_cfg->set( "games", _games );
-			_cfg->set( "moves", _moves );
-			_cfg->set( "player_wins", _player_wins );
-			_cfg->set( "computer_wins", _computer_wins );
-			_cfg->flush();
-		}
-		wait( 0.5 );
-		fl_beep( FL_BEEP_MESSAGE );
-
-		// prepare the right message
-		ostringstream stat;
-		if ( _replay )
-		{
-			stat << "** Replay end **";
-		}
-		else
-		{
-			stat << _games << " games - " <<
-			_player_wins << " : " << _computer_wins <<
-			endl << "(average moves: " << _moves / _games << ")";
-		}
-		ostringstream msg;
-		if ( !_abortReplay )
-		{
-			msg << ( adraw ? "No more moves!\n\nGame ends adraw." :
-			         who_ == PLAYER ? "You managed to win!" : "FLTK wins!" ) <<
-			         endl << endl;
-			if ( !_replay )
-				_replayMoves = _history;
-		}
-		msg << stat.str();
-		DBG( msg.str() );
-
-		// show message
-		if ( _alert )
-		{
-			fl_alert( "%s", msg.str().c_str() );
-		}
-		else
-		{
-			_message = msg.str();
-			redraw();
-		}
-
-		// wait for a key (click)
-		if ( !waitKey() )
-			return;
-
-		// query for replay
-		int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
-		_replay = answer == 1;
-		_abortReplay = false;
-
-		initPlay();
-
-		if ( _replay )
-		{
-			_message = "Replay mode";
-			_player = !_player; // (need to compensate toggle below)
-		}
-		else
-		{
-			_replayMoves.clear();
-			if ( _move.x ) // when pre-loaded board keep player:
-				_player = !_player; // (need to compensate toggle below)
-		}
-		redraw();
+		gameFinished( adraw ? 0 : who_ );
 	}
 
 	// trigger next move
