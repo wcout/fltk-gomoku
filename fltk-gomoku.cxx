@@ -326,6 +326,11 @@ private:
 	void loadBoard( istream& is_ );
 	void onDelay();
 	bool popupMenu();
+	void selectAndLoadBgImage();
+	void selectAndSaveBoard();
+	void selectAndLoadBoard();
+	void selectAndSaveGame();
+	void selectAndLoadGame();
 	bool takeBackMove();
 	bool takeBackMoves();
 	static void cb_delay( void *d_ );
@@ -360,6 +365,7 @@ private:
 	// Note: this variables are only used as adresses for menu items
 	string _about;
 	string _abortGame;
+	string _abortReplay;
 	string _loadBgImage;
 	string _clearBgImage;
 	string _saveBoard;
@@ -1243,78 +1249,88 @@ void Gomoku::selectGridColor()
 	selectColor( "Select board grid color:", BOARD_GRID_COLOR, "grid_color" );
 }
 
+void Gomoku::selectAndLoadBgImage()
+//-------------------------------------------------------------------------------
+{
+	const char *fname = fl_file_chooser( "Load board background image",
+		"*.{bm,bmp,gif,jpg,pbm,pgm,png,ppm,xbm,xpm}", _bgImageFile.c_str() );
+	if ( fname )
+		loadBgImage( fname );
+}
+
+void Gomoku::selectAndSaveBoard()
+//-------------------------------------------------------------------------------
+{
+	static char *fname = 0;
+	fname = fl_file_chooser( "Save board to file",
+		"*.{txt}", fname );
+	if ( fname )
+		saveBoardToFile( fname );
+}
+
+void Gomoku::selectAndLoadBoard()
+//-------------------------------------------------------------------------------
+{
+	static char *fname = 0;
+	fname = fl_file_chooser( "Load board from file",
+		"*.{txt}", fname );
+	if ( fname )
+	{
+		_args.boardFile = fname; // board gets loaded via abortGame()
+		abortGame();	// current game will be discarded;
+	}
+}
+
+void Gomoku::selectAndSaveGame()
+//-------------------------------------------------------------------------------
+{
+	static char *fname = 0;
+	fname = fl_file_chooser( "Save game to file",
+		"*.{gom}", fname );
+	if ( fname )
+		saveGame( fname );
+}
+
+void Gomoku::selectAndLoadGame()
+//-------------------------------------------------------------------------------
+{
+	static char *fname = 0;
+	fname = fl_file_chooser( "Load game from file",
+		"*.{gom}", fname );
+	if ( fname )
+	{
+		abortGame();	// current game will be discarded
+		loadGame( fname );
+	}
+}
+
 void Gomoku::onMenu( void *d_ )
 //-------------------------------------------------------------------------------
 {
 	if ( d_ == &_about )
-	{
 		about();
-	}
 	else if ( d_ == &_abortGame )
-	{
 		abortGame();
-	}
 	else if ( d_ == &_loadBgImage )
-	{
-		const char *fname = fl_file_chooser( "Load board background image",
-			"*.{bm,bmp,gif,jpg,pbm,pgm,png,ppm,xbm,xpm}", _bgImageFile.c_str() );
-		if ( fname )
-			loadBgImage( fname );
-	}
+		selectAndLoadBgImage();
 	else if ( d_ == &_clearBgImage )
-	{
 		clearBgImage();
-	}
 	else if ( d_ == &_saveBoard )
-	{
-		static char *fname = 0;
-		fname = fl_file_chooser( "Save board to file",
-			"*.{txt}", fname );
-		if ( fname )
-			saveBoardToFile( fname );
-	}
+		selectAndSaveBoard();
 	else if ( d_ == &_loadBoard )
-	{
-		static char *fname = 0;
-		fname = fl_file_chooser( "Load board from file",
-			"*.{txt}", fname );
-		if ( fname )
-		{
-			_args.boardFile = fname; // board gets loaded via abortGame()
-			abortGame();	// current game will be discarded;
-		}
-	}
-	else if ( d_ == &_loadGame )
-	{
-		static char *fname = 0;
-		fname = fl_file_chooser( "Load game from file",
-			"*.{gom}", fname );
-		if ( fname )
-		{
-			abortGame();	// current game will be discarded
-			loadGame( fname );
-		}
-	}
+		selectAndLoadBoard();
 	else if ( d_ == &_saveGame )
-	{
-		static char *fname = 0;
-		fname = fl_file_chooser( "Save game to file",
-			"*.{gom}", fname );
-		if ( fname )
-			saveGame( fname );
-	}
-	else if ( d_ == &_abort )
+		selectAndSaveGame();
+	else if ( d_ == &_loadGame )
+		selectAndLoadGame();
+	else if ( d_ == &_boardColor )
+		selectBoardColor();
+	else if ( d_ == &_gridColor )
+		selectGridColor();
+	else if ( d_ == &_abortReplay )
 	{
 		_abort = true;
 		_wait_click = false;
-	}
-	else if ( d_ == &_boardColor )
-	{
-		selectBoardColor();
-	}
-	else if ( d_ == &_gridColor )
-	{
-		selectGridColor();
 	}
 }
 
@@ -1434,7 +1450,7 @@ bool Gomoku::popupMenu()
 	};
 	static Fl_Menu_Item replay_menu[] =
 	{
-		{ "Abort replay", 0, cb_menu, &_abort },
+		{ "Abort replay", 0, cb_menu, &_abortReplay },
 		{ "Save board..", 0, cb_menu, &_saveBoard },
 		{ "Save game..", 0, cb_menu, &_saveGame },
 		{ 0 }
