@@ -656,8 +656,7 @@ void Gomoku::loadGame( const string& f_ )
 		// (so everything else is setup correctly)
 		Move move = _history.back();
 		_history.pop_back();
-		_player = !_player;
-		setPiece( move, _player );
+		setPiece( move, _board[move.x][move.y] );
 	}
 	else
 	{
