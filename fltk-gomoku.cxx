@@ -140,10 +140,15 @@ struct Move
 		value = value_;
 		eval.init();
 	}
+	string asString() const
+	{
+		ostringstream os;
+		os << "#" << (char)( y + 'A' - 1 ) << (char)( x + 'a' - 1 );
+		return os.str();
+	}
 	virtual std::ostream& printOn( std::ostream& os_ ) const
 	{
-		os_ << "#" << (char)( y + 'A' - 1 ) << (char)( x + 'a' - 1 ) <<
-			  " (" << x << "/" << y << ") value: " << value;
+		os_ << asString() << " (" << x << "/" << y << ") value: " << value;
 		return os_;
 	}
 };
@@ -265,6 +270,7 @@ public:
 	void loadBoardFromFile( const string& f_ );
 	void saveBoardToFile( const string& f_ ) const;
 	void dumpBoard( ostream& ofs_ = std::cout ) const;
+	void saveGame( const string& f_ ) const;
 	void makeMove();
 	void setPiece( const Move& move_, int who_ );
 	void wait( double delay_ );
@@ -345,6 +351,7 @@ private:
 	string _loadBoard;
 	string _boardColor;
 	string _gridColor;
+	string _saveGame;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -467,7 +474,7 @@ void Gomoku::nextMove()
 	{
 		if ( !waitKey() )
 			return;
-		fl_cursor( FL_CURSOR_WAIT );
+		default_cursor( FL_CURSOR_WAIT );
 		_move.init();
 		if ( !_abortReplay && _history.size() < _replayMoves.size() )
 		{
@@ -482,7 +489,7 @@ void Gomoku::nextMove()
 	if ( _player )
 	{
 		_message = "Your move";
-		fl_cursor( FL_CURSOR_HAND );
+		default_cursor( FL_CURSOR_HAND );
 	}
 	else
 	{
@@ -605,6 +612,26 @@ void Gomoku::saveBoardToFile( const string& f_ ) const
 	if ( !ofs.is_open() )
 		return;
 	dumpBoard( ofs );
+}
+
+void Gomoku::saveGame( const string& f_ ) const
+//-------------------------------------------------------------------------------
+{
+	ofstream ofs( f_.c_str() );
+	if ( !ofs.is_open() )
+		return;
+	for ( size_t i = 0; i < _history.size(); i++ )
+	{
+		Move move( _history[i] );
+		int who = _board[move.x][move.y];
+		if ( who == COMPUTER )
+			ofs << "\t";
+		ofs << move.asString();
+		if ( who == PLAYER )
+			ofs << "\t";
+		else
+			ofs << endl;
+	}
 }
 
 int Gomoku::xp( int x_ ) const
@@ -742,7 +769,7 @@ void Gomoku::makeMove()
 //-------------------------------------------------------------------------------
 {
 	_pondering = true;
-	fl_cursor( FL_CURSOR_WAIT );
+	default_cursor( FL_CURSOR_WAIT );
 	Fl::add_timeout( 1.0, cb_ponder, this );
 	Move move;
 	if ( !findMove( move ) )
@@ -752,7 +779,7 @@ void Gomoku::makeMove()
 	}
 	while ( _pondering )
 		Fl::check();
-	fl_cursor( FL_CURSOR_DEFAULT );
+	fl_cursor( FL_CURSOR_ARROW );
 	_pondering = false;
 	Fl::remove_timeout( cb_ponder, this );
 	_move = move;
@@ -1067,7 +1094,7 @@ bool Gomoku::waitKey()
 	if ( !shown() ) // user closed program
 		return false;
 	_wait_click = true;
-	cursor( FL_CURSOR_MOVE );
+	default_cursor( FL_CURSOR_MOVE );
 	while ( _wait_click && !_abortReplay )
 		Fl::check();
 	if ( !shown() ) // user closed program
@@ -1174,6 +1201,14 @@ void Gomoku::onMenu( void *d_ )
 			_args.boardFile = fname;
 			abortGame();
 		}
+	}
+	else if ( d_ == &_saveGame )
+	{
+		static char *fname = 0;
+		fname = fl_file_chooser( "Save game to file",
+			"*.{gom}", fname );
+		if ( fname )
+			saveGame( fname );
 	}
 	else if ( d_ == &_abortReplay )
 	{
@@ -1300,12 +1335,14 @@ bool Gomoku::popupMenu()
 		{ "Board grid color..", 0, cb_menu, &_gridColor, FL_MENU_DIVIDER },
 		{ "Save board..", 0, cb_menu, &_saveBoard },
 		{ "Load board..", 0, cb_menu, &_loadBoard },
+		{ "Save game..", 0, cb_menu, &_saveGame },
 		{ 0 }
 	};
 	static Fl_Menu_Item replay_menu[] =
 	{
 		{ "Abort replay", 0, cb_menu, &_abortReplay },
 		{ "Save board..", 0, cb_menu, &_saveBoard },
+		{ "Save game..", 0, cb_menu, &_saveGame },
 		{ 0 }
 	};
 	// some tuning of menu display
@@ -1316,8 +1353,10 @@ bool Gomoku::popupMenu()
 	if ( ref.textsize() < ts )
 		ref.textsize( ts );
 	// show it
+	fl_cursor( FL_CURSOR_ARROW );
 	const Fl_Menu_Item *item = menu->popup( Fl::event_x(), Fl::event_y(),
 		title.c_str(), 0, &ref );
+	fl_cursor( FL_CURSOR_DEFAULT );
 	if ( item ) item->do_callback( this, item->user_data() );
 	return item != 0;
 }
