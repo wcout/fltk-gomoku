@@ -624,8 +624,8 @@ void Gomoku::saveGame( const string& f_ ) const
 	{
 		Move move( _history[i] );
 		int who = _board[move.x][move.y];
-		if ( who == COMPUTER )
-			ofs << "\t";
+		if ( who == COMPUTER && i == 0 )
+			ofs << "-\t";
 		ofs << move.asString();
 		if ( who == PLAYER )
 			ofs << "\t";
