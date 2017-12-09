@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <ctime>
+#include "welcome.h"
 
 using namespace std;
 
@@ -279,6 +280,7 @@ public:
 	void abortGame();
 	void clearBoard();
 	void loadBoardFromFile( const string& f_ );
+	void loadBoardFromString( const char *s_ );
 	void saveBoardToFile( const string& f_ ) const;
 	void dumpBoard( ostream& ofs_ = std::cout ) const;
 	void loadGame( const string& f_ );
@@ -321,6 +323,7 @@ private:
 	int handleGameEvent( int e_ );
 	int handleWaitClickEvent( int e_ );
 	void initPlay();
+	void loadBoard( istream& is_ );
 	void onDelay();
 	bool popupMenu();
 	bool takeBackMove();
@@ -564,11 +567,24 @@ void Gomoku::loadBoardFromFile( const string& f_ )
 	ifstream ifs( f_.c_str() );
 	if ( !ifs.is_open() )
 		return;
+	loadBoard( ifs );
+}
+
+void Gomoku::loadBoardFromString( const char *s_ )
+//-------------------------------------------------------------------------------
+{
+	istringstream iss( s_ );
+	loadBoard( iss );
+}
+
+void Gomoku::loadBoard( istream& is_ )
+//-------------------------------------------------------------------------------
+{
 	int y = 0;
 	int last_moved = 0;
 	Move last_move;
 	string line;
-	while ( getline( ifs, line ) )
+	while ( getline( is_, line ) )
 	{
 		if ( y >= 1 && y <= _G + 1 )
 		{
@@ -1174,9 +1190,22 @@ void Gomoku::initPlay()
 void Gomoku::about()
 //-------------------------------------------------------------------------------
 {
+	bool welcome = _history.empty();
+	if ( welcome )
+	{
+		loadBoardFromString( board_welcome );
+		_message = "*** WELCOME to ***";
+		redraw();
+		Fl::flush();
+	}
 	fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
 	          "A minimal implementation of the \"5 in a row\" game.\n\n"
 	"(c) 2017 wcout wcout<gmx.net>" );
+	if ( welcome )
+	{
+		_player = !_player;
+		abortGame();
+	}
 }
 
 void Gomoku::abortGame()
