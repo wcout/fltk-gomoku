@@ -633,14 +633,13 @@ void Gomoku::loadGame( const string& f_ )
 	ifstream ifs( f_.c_str() );
 	if ( !ifs.is_open() )
 		return;
-	string m;
 	int who = PLAYER;
 	while ( ifs.good() )
 	{
-		m.erase();
+		string m;
 		ifs >> m;
 		if ( m.empty() ) break;
-		if ( m[0] == '#' )
+		if ( m[0] == '#' ) // skips '-' (player did not begin)
 		{
 			Move move( m );
 			_board[ move.x ][ move.y ] = who;
@@ -649,18 +648,20 @@ void Gomoku::loadGame( const string& f_ )
 		}
 		who = who == PLAYER ? COMPUTER : PLAYER;
 	}
-	_player = who == COMPUTER;
+	_player = who == COMPUTER; // who moves next
 
 	if ( _history.size() )
 	{
+		// set last piece with dedicated method
+		// (so everything else is setup correctly)
 		Move move = _history.back();
 		_history.pop_back();
 		_player = !_player;
-		// set last piece with dedicated method
 		setPiece( move, _player );
 	}
 	else
 	{
+		// (this was an empty file)
 		nextMove();
 	}
 }
@@ -1034,7 +1035,8 @@ void Gomoku::gameFinished( int winner_ )
 	// (winner_ will be 0 if adraw, otherwise PLAYER or COMPUTER)
 	if ( !_replay )
 	{
-		updateGameStats( winner_ );
+		if ( !_abort )
+			updateGameStats( winner_ );
 		_replayMoves = _history; // save the game history for replay
 	}
 
@@ -1250,8 +1252,8 @@ void Gomoku::onMenu( void *d_ )
 			"*.{txt}", fname );
 		if ( fname )
 		{
-			_args.boardFile = fname;
-			abortGame();
+			_args.boardFile = fname; // board gets loaded via abortGame()
+			abortGame();	// current game will be discarded;
 		}
 	}
 	else if ( d_ == &_loadGame )
@@ -1261,7 +1263,7 @@ void Gomoku::onMenu( void *d_ )
 			"*.{gom}", fname );
 		if ( fname )
 		{
-			abortGame();
+			abortGame();	// current game will be discarded
 			loadGame( fname );
 		}
 	}
