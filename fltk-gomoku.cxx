@@ -472,6 +472,9 @@ void Gomoku::nextMove()
 		if ( !_abortReplay && _history.size() < _replayMoves.size() )
 		{
 			_move = _replayMoves[ _history.size() ];
+			ostringstream os;
+			os << "Replay move " << _history.size() + 1 << "/" << _replayMoves.size();
+			_message = os.str();
 		}
 		Fl::add_timeout( .1, cb_move, this );
 		return;
