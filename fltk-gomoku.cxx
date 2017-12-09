@@ -295,6 +295,7 @@ private:
 	void countPos( Move &move, const Board &board_ ) const;
 	bool checkWin( int x_, int y_ ) const;
 	bool findMove( Move& move_ ) const;
+	void finishedMessage( int winner_ );
 	void gameFinished( int winner_ );
 	bool randomMove( Move& move_ ) const;
 	int evaluate( Move& m_, int who_ ) const;
@@ -309,6 +310,7 @@ private:
 	static void cb_delay( void *d_ );
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 	void onMenu( void *d_ );
+	void updateGameStats( int winner_ );
 	static void cb_menu( Fl_Widget *w_, void *d_ );
 private:
 	int _G;
@@ -893,30 +895,24 @@ int Gomoku::eval( Move& move_ ) const
 	return move_.value;
 } // eval
 
-void Gomoku::gameFinished( int winner_ )
+void Gomoku::updateGameStats( int winner_ )
 //-------------------------------------------------------------------------------
 {
-	// this game is finished, either by adraw or someone has won.
-	// (winner_ will be 0 if adraw, otherwise PLAYER or COMPUTER)
-	bool adraw = !winner_;
-	if ( !_replay )
+	_games++;
+	if ( winner_ )
 	{
-		// update game stats
-		_games++;
-		if ( !adraw )
-		{
-			winner_ == PLAYER ? _player_wins++ : _computer_wins++;
-		}
-		_cfg->set( "games", _games );
-		_cfg->set( "moves", _moves );
-		_cfg->set( "player_wins", _player_wins );
-		_cfg->set( "computer_wins", _computer_wins );
-		_cfg->flush();
+		winner_ == PLAYER ? _player_wins++ : _computer_wins++;
 	}
-	wait( 0.5 );
-	fl_beep( FL_BEEP_MESSAGE );
+	_cfg->set( "games", _games );
+	_cfg->set( "moves", _moves );
+	_cfg->set( "player_wins", _player_wins );
+	_cfg->set( "computer_wins", _computer_wins );
+	_cfg->flush();
+}
 
-	// prepare the right message
+void Gomoku::finishedMessage( int winner_ )
+//-------------------------------------------------------------------------------
+{
 	ostringstream stat;
 	if ( _replay )
 	{
@@ -931,11 +927,9 @@ void Gomoku::gameFinished( int winner_ )
 	ostringstream msg;
 	if ( !_abortReplay )
 	{
-		msg << ( adraw ? "No more moves!\n\nGame ends adraw." :
+		msg << ( !winner_ ? "No more moves!\n\nGame ends adraw." :
 		         winner_ == PLAYER ? "You managed to win!" : "FLTK wins!" ) <<
 		         endl << endl;
-		if ( !_replay )
-			_replayMoves = _history;
 	}
 	msg << stat.str();
 	DBG( msg.str() );
@@ -950,6 +944,24 @@ void Gomoku::gameFinished( int winner_ )
 		_message = msg.str();
 		redraw();
 	}
+}
+
+void Gomoku::gameFinished( int winner_ )
+//-------------------------------------------------------------------------------
+{
+	// this game is finished, either by adraw or someone has won.
+	// (winner_ will be 0 if adraw, otherwise PLAYER or COMPUTER)
+	if ( !_replay )
+	{
+		updateGameStats( winner_ );
+		_replayMoves = _history; // save the game history for replay
+	}
+
+	wait( 0.5 );
+	fl_beep( FL_BEEP_MESSAGE );
+
+	// prepare/show the right message
+	finishedMessage( winner_ );
 
 	// wait for a key (click)
 	if ( !waitKey() )
@@ -965,15 +977,15 @@ void Gomoku::gameFinished( int winner_ )
 	if ( _replay )
 	{
 		_message = "Replay mode";
-		_player = !_player; // (need to compensate toggle below)
 	}
 	else
 	{
 		_replayMoves.clear();
-		if ( _move.x ) // when pre-loaded board keep player:
-			_player = !_player; // (need to compensate toggle below)
+		if ( !_move.x ) // when pre-loaded board keep player,
+			_player = !_player; // otherwise change first move
 	}
 	redraw();
+	nextMove();
 }
 
 void Gomoku::setPiece( const Move& move_, int who_ )
@@ -1013,7 +1025,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 
 	if ( adraw || checkWin( move_.x, move_.y ) )
 	{
-		gameFinished( adraw ? 0 : who_ );
+		return gameFinished( adraw ? 0 : who_ );
 	}
 
 	// trigger next move
