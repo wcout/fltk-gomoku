@@ -1620,6 +1620,7 @@ int main( int argc_, char *argv_[] )
 {
 	Fl::scheme( "gtk+" );
 	Fl::get_system_colors();
+	Fl::background( 240, 240, 240 );
 	fl_register_images();
 	srand( time( 0 ) );
 	Gomoku g( argc_, argv_ );
