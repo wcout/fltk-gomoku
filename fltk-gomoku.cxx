@@ -265,13 +265,14 @@ struct Args
 {
 	string bgImageFile;
 	string boardFile;
+	string logFile;
 };
 
 //-------------------------------------------------------------------------------
 class Gomoku : public Fl_Double_Window
 //-------------------------------------------------------------------------------
 {
-#define DBG(a) { if ( _debug ) std::cout << a << endl; }
+#define DBG(a) { if ( _debug ) *_logStream << a << endl; }
 	typedef Fl_Double_Window Inherited;
 public:
 	Gomoku( int argc_ = 0, char *argv_[] = 0 );
@@ -362,6 +363,7 @@ private:
 	string _dmsg;
 	string _bgImageFile;
 	Args _args;
+	ostream *_logStream;
 	// Note: this variables are only used as adresses for menu items
 	string _about;
 	string _abortGame;
@@ -390,10 +392,13 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_replay( false ),
 	_abort( false ),
 	_debug( false ),
-	_alert( false )
+	_alert( false ),
+	_logStream( &std::cout )
 //-------------------------------------------------------------------------------
 {
 	parseArgs( argc_, argv_ );
+	if ( _args.logFile.size() )
+		_logStream = new ofstream( _args.logFile.c_str() );
 
 	// Widget for background graphics
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
@@ -547,6 +552,11 @@ void Gomoku::parseArgs( int argc_, char *argv_[] )
 		{
 			if ( ++i < argc_ )
 				Fl::scheme( argv_[i] );
+		}
+		else if ( arg == "-l" )
+		{
+			if ( ++i < argc_ )
+				_args.logFile = argv_[i];
 		}
 		else if ( arg[0] != '-' )
 		{
@@ -1125,7 +1135,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		adraw = !randomMove( move ); // try a move - will fail if board full
 	}
 	if ( _debug )
-		dumpBoard();
+		dumpBoard( *_logStream );
 
 	if ( adraw || checkWin( move_.x, move_.y ) )
 	{
@@ -1411,7 +1421,7 @@ int Gomoku::handle( int e_ )
 	{
 		_debug = !_debug;
 		_dmsg.erase();
-		cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
+		std::cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
 		redraw();
 	}
 	// show menu with right button
@@ -1488,7 +1498,7 @@ bool Gomoku::takeBackMove()
 		_dmsg.erase();
 		redraw();
 		if ( _debug )
-			dumpBoard();
+			dumpBoard( *_logStream );
 		return true;
 	}
 	return false;
