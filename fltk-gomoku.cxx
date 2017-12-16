@@ -46,12 +46,11 @@
 using namespace std;
 
 static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
-static const char PLAYER = 1;
-static const char COMPUTER = 2;
-
 static Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
 static Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 
+static const int PLAYER = 1;
+static const int COMPUTER = 2;
 
 //-------------------------------------------------------------------------------
 struct PosInfo
@@ -1624,10 +1623,10 @@ void Gomoku::draw()
 	{
 		fl_color( FL_DARK_GRAY );
 		fl_font( FL_HELVETICA|FL_BOLD, .8 * xp( 1 ) );
-		fl_draw( _message.c_str(), xp( 1 ) + 2, yp( 1 ) + 2, xp( 18 ), yp( 18 ),
+		fl_draw( _message.c_str(), xp( 1 ) + 2, yp( 1 ) + 2, xp( _G ), yp( _G ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 		fl_color( FL_YELLOW );
-		fl_draw( _message.c_str(), xp( 1 ) , yp( 1 ), xp( 18 ), yp( 18 ),
+		fl_draw( _message.c_str(), xp( 1 ) , yp( 1 ), xp( _G ), yp( _G ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 	}
 
@@ -1635,7 +1634,7 @@ void Gomoku::draw()
 	{
 		fl_color( FL_WHITE );
 		fl_font( FL_HELVETICA|FL_BOLD, xp( 1 ) / 3 );
-		fl_draw( _dmsg.c_str(), xp( 1 ), yp( _G + 1 ) + yp( 1 ) / 2, xp( 18 ), yp( 18 ),
+		fl_draw( _dmsg.c_str(), xp( 1 ), yp( _G + 1 ) + yp( 1 ) / 2, xp( _G ), yp( _G ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 	}
 } // draw
