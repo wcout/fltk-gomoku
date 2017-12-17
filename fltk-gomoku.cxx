@@ -279,8 +279,8 @@ public:
 	void about();
 	void abortGame();
 	void clearBoard();
-	void loadBoardFromFile( const string& f_ );
-	void loadBoardFromString( const char *s_ );
+	bool loadBoardFromFile( const string& f_ );
+	bool loadBoardFromString( const char *s_ );
 	void saveBoardToFile( const string& f_ ) const;
 	void dumpBoard( ostream& ofs_ = std::cout ) const;
 	void loadGame( const string& f_ );
@@ -324,7 +324,7 @@ private:
 	int handleGameEvent( int e_ );
 	int handleWaitClickEvent( int e_ );
 	void initPlay();
-	void loadBoard( istream& is_ );
+	bool loadBoard( istream& is_ );
 	void onDelay();
 	bool popupMenu();
 	void selectAndLoadBgImage();
@@ -574,26 +574,35 @@ void Gomoku::clearBoard()
 			_board[x][y] = 0;
 	_history.clear();
 	if ( _args.boardFile.size() )
-	loadBoardFromFile( _args.boardFile );
+	{
+		if ( !loadBoardFromFile( _args.boardFile ) )
+		{
+			ostringstream os;
+			os << "Failed to (completely) load board\n'" << _args.boardFile << "'";
+			redraw();
+			Fl::flush();
+			fl_alert( "%s", os.str().c_str() );
+		}
+	}
 }
 
-void Gomoku::loadBoardFromFile( const string& f_ )
+bool Gomoku::loadBoardFromFile( const string& f_ )
 //-------------------------------------------------------------------------------
 {
 	ifstream ifs( f_.c_str() );
 	if ( !ifs.is_open() )
-		return;
-	loadBoard( ifs );
+		return false;
+	return loadBoard( ifs );
 }
 
-void Gomoku::loadBoardFromString( const char *s_ )
+bool Gomoku::loadBoardFromString( const char *s_ )
 //-------------------------------------------------------------------------------
 {
 	istringstream iss( s_ );
-	loadBoard( iss );
+	return loadBoard( iss );
 }
 
-void Gomoku::loadBoard( istream& is_ )
+bool Gomoku::loadBoard( istream& is_ )
 //-------------------------------------------------------------------------------
 {
 	int y = 0;
@@ -602,8 +611,9 @@ void Gomoku::loadBoard( istream& is_ )
 	string line;
 	while ( getline( is_, line ) )
 	{
-		if ( y >= 1 && y <= _G + 1 )
+		if ( y ) // skip first line (labels)
 		{
+			if ( (int)line.size() < 2 * ( _G + 1 ) + 1 ) break;
 			for ( int x = 1; x <= _G + 1; x++ )
 			{
 				char c = line[ x * 2];
@@ -621,10 +631,11 @@ void Gomoku::loadBoard( istream& is_ )
 					last_moved = COMPUTER;
 			}
 		}
-		y++;
+		if ( ++y > _G + 1 ) break;
 	}
 	_player = last_moved == COMPUTER;
 	_move = last_move;
+	return y >= _G + 1;
 }
 
 void Gomoku::dumpBoard( ostream& ofs_/* = std::cout*/ ) const
