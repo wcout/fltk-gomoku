@@ -92,8 +92,10 @@ struct Eval
 //-------------------------------------------------------------------------------
 {
 	PosInfo info[4 + 1];
-	void init() { for ( int i = 1; i <= 4; i++ )
-			      info[i].init();
+	void init()
+	{
+		for ( int i = 1; i <= 4; i++ )
+			info[i].init();
 	}
 	bool wins() const
 	{
