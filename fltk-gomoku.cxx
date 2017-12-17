@@ -340,7 +340,7 @@ private:
 	void updateGameStats( int winner_ );
 	static void cb_menu( Fl_Widget *w_, void *d_ );
 private:
-	int _G;
+	int _BS;
 	Board _board;
 	Eval _eval[24][24];
 	bool _player;
@@ -380,7 +380,7 @@ private:
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	Inherited( 600, 600, "FLTK Gomoku (\"5 in a row\")" ),
-	_G( 18 ),
+	_BS( 19 ), // board size
 	_player( true ),
 	_pondering( false ),
 	_waiting( false ),
@@ -442,7 +442,7 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	BOARD_GRID_COLOR = (Fl_Color)grid_color;
 
 	resizable( this );
-	size_range( ( _G + 2 ) * 10, ( _G + 2 ) * 10, 0, 0, ( _G + 2 ), ( _G + 2 ), 1 );
+	size_range( ( _BS + 1 ) * 10, ( _BS + 1 ) * 10, 0, 0, ( _BS + 1 ), ( _BS + 1 ), 1 );
 	resize( X, Y, W, W );
 	show();
 
@@ -569,8 +569,8 @@ void Gomoku::clearBoard()
 //-------------------------------------------------------------------------------
 {
 	memset( _board, -1, sizeof( _board ) );
-	for ( int x = 1; x <= _G + 1; x++ )
-		for ( int y = 1; y <= _G + 1; y++ )
+	for ( int x = 1; x <= _BS; x++ )
+		for ( int y = 1; y <= _BS; y++ )
 			_board[x][y] = 0;
 	_history.clear();
 	if ( _args.boardFile.size() )
@@ -613,8 +613,8 @@ bool Gomoku::loadBoard( istream& is_ )
 	{
 		if ( y ) // skip first line (labels)
 		{
-			if ( (int)line.size() < 2 * ( _G + 1 ) + 1 ) break;
-			for ( int x = 1; x <= _G + 1; x++ )
+			if ( (int)line.size() < 2 * ( _BS ) + 1 ) break;
+			for ( int x = 1; x <= _BS; x++ )
 			{
 				char c = line[ x * 2];
 				if ( c == 'p' || c == 'P' )
@@ -631,24 +631,24 @@ bool Gomoku::loadBoard( istream& is_ )
 					last_moved = COMPUTER;
 			}
 		}
-		if ( ++y > _G + 1 ) break;
+		if ( ++y > _BS ) break;
 	}
 	_player = last_moved == COMPUTER;
 	_move = last_move;
-	return y >= _G + 1;
+	return y >= _BS;
 }
 
 std::ostream& Gomoku::dumpBoard( std::ostream& os_/* = std::cout*/ ) const
 //-------------------------------------------------------------------------------
 {
 	os_ << " ";
-	for ( int x = 1; x <= _G + 1; x++ )
+	for ( int x = 1; x <= _BS; x++ )
 		os_ << " " << (char)('a' + x - 1);
 	os_ << endl;
-	for ( int y = 1; y <= _G + 1; y++ )
+	for ( int y = 1; y <= _BS; y++ )
 	{
 		os_ << (char)('A' + y - 1) << " ";
-		for ( int x = 1; x <= _G + 1; x++ )
+		for ( int x = 1; x <= _BS; x++ )
 		{
 			int who = _board[x][y];
 			bool last = x == _move.x && y == _move.y;
@@ -740,14 +740,14 @@ int Gomoku::xp( int x_ ) const
 //-------------------------------------------------------------------------------
 {
 	int W = w() < h() ? w() : h();
-	return W / ( _G + 2 ) * x_;
+	return W / ( _BS + 1 ) * x_;
 }
 
 int Gomoku::yp( int y_ ) const
 //-------------------------------------------------------------------------------
 {
 	int W = w() < h() ? w() : h();
-	return W / ( _G + 2 ) * y_;
+	return W / ( _BS + 1 ) * y_;
 }
 
 void Gomoku::drawPiece( int color_, int x_, int y_ ) const
@@ -841,14 +841,15 @@ bool Gomoku::randomMove( Move& move_ ) const
 {
 	vector<Move> moves;
 	int r( 0 );
-	for ( int x = 1; x <= _G + 1; x++ )
+	for ( int x = 1; x <= _BS; x++ )
 	{
-		for ( int y = 1; y <= _G + 1; y++ )
+		for ( int y = 1; y <= _BS; y++ )
 		{
 			if ( _board[x][y] == 0 )
 			{
-				if ( x > _G / 3 && x < _G - _G / 3 &&
-				     y > _G / 3 && y < _G - _G / 3 )
+				int R = _BS / 3;
+				if ( x > R && x <= _BS - R &&
+				     y > R && y <= _BS - R )
 				{
 					moves.insert( moves.begin(), Move( x, y ) );
 					r++;
@@ -927,9 +928,9 @@ bool Gomoku::findMove( Move& move_ ) const
 //-------------------------------------------------------------------------------
 {
 	vector<Move> moves;
-	for ( int x = 1; x <= _G + 1; x++ )
+	for ( int x = 1; x <= _BS; x++ )
 	{
-		for ( int y = 1; y <= _G + 1; y++ )
+		for ( int y = 1; y <= _BS; y++ )
 		{
 			if ( _board[x][y] == 0 )
 			{
@@ -1383,7 +1384,7 @@ int Gomoku::handleGameEvent( int e_ )
 	{
 		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
 		int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
-		if ( x >= 1 && x <= _G + 1 && y >= 1 && y <= _G + 1 && _board[x][y] == 0 )
+		if ( x >= 1 && x <= _BS && y >= 1 && y <= _BS && _board[x][y] == 0 )
 			setPiece( Move( x, y ), PLAYER );
 		else
 			fl_beep( FL_BEEP_ERROR );
@@ -1538,47 +1539,48 @@ void Gomoku::drawBoard( bool bg_/* = false*/ ) const
 	if ( bg_ )
 	{
 		fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
-		fl_rectf( 0, 0, xp( _G + 2 ), yp( _G + 2 ), BOARD_COLOR );
+		fl_rectf( 0, 0, xp( _BS + 1 ), yp( _BS + 1 ), BOARD_COLOR );
 	}
 
 	// draw grid
 	if ( xp( 1 ) > 8 )
 		fl_line_style( FL_SOLID, 2 ); // for outline
-	fl_rect( -2, -2, xp( _G + 2 ) + 2, yp( _G + 2 ) + 2, FL_DARK_GRAY );
-	fl_rect( xp( 1 ), yp( 1 ), xp ( _G ) + 1, yp( _G ) + 1, BOARD_GRID_COLOR );
+	fl_rect( -2, -2, xp( _BS + 1 ) + 2, yp( _BS + 1 ) + 2, FL_DARK_GRAY );
+	fl_rect( xp( 1 ), yp( 1 ), xp ( _BS - 1 ) + 1, yp( _BS - 1 ) + 1, BOARD_GRID_COLOR );
 	fl_line_style( 0 , 0 );
-	for ( int x = 0; x <= _G; x++ )
-		fl_line( xp( x + 1 ), yp( 1 ), xp( x + 1 ), yp( 1  + _G ) );
+	for ( int x = 1; x <= _BS; x++ )
+		fl_line( xp( x ), yp( 1 ), xp( x ), yp( _BS ) );
 
-	for ( int y = 0; y <= _G; y++ )
-		fl_line( xp( 1 ), yp( y + 1 ), xp( 1 + _G ), yp( y + 1 ) );
+	for ( int y = 1; y <= _BS; y++ )
+		fl_line( xp( 1 ), yp( y ), xp( _BS ), yp( y ) );
 
 	// draw center
 	if ( xp( 1 ) > 8 )
 	{
 		int r = ceil( (double)xp( 1 ) / 12 );
-		fl_circle( xp( _G / 2 + 1 ), yp( _G / 2 + 1 ), r );
-		fl_circle( xp( _G / 4 + 1 ), yp( _G / 4 + 1 ), r );
-		fl_circle( xp( _G / 4 + 1 ), yp( _G / 2 + 1 ), r );
-		fl_circle( xp( _G / 2 + 1 ), yp( _G / 4 + 1 ), r );
-		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 4 + 1 ), r );
-		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G / 2 + 1 ), r );
-		fl_circle( xp( _G / 4 + 1 ), yp( _G - _G / 4 + 1 ), r );
-		fl_circle( xp( _G / 2 + 1 ), yp( _G - _G / 4 + 1 ), r );
-		fl_circle( xp( _G - _G / 4 + 1 ), yp( _G - _G / 4 + 1 ), r );
+		int G = _BS - 1;
+		fl_circle( xp( G / 2 + 1 ), yp( G / 2 + 1 ), r );
+		fl_circle( xp( G / 4 + 1 ), yp( G / 4 + 1 ), r );
+		fl_circle( xp( G / 4 + 1 ), yp( G / 2 + 1 ), r );
+		fl_circle( xp( G / 2 + 1 ), yp( G / 4 + 1 ), r );
+		fl_circle( xp( G - G / 4 + 1 ), yp( G / 4 + 1 ), r );
+		fl_circle( xp( G - G / 4 + 1 ), yp( G / 2 + 1 ), r );
+		fl_circle( xp( G / 4 + 1 ), yp( G - G / 4 + 1 ), r );
+		fl_circle( xp( G / 2 + 1 ), yp( G - G / 4 + 1 ), r );
+		fl_circle( xp( G - G / 4 + 1 ), yp( G - G / 4 + 1 ), r );
 	}
 
 	if ( _debug )
 	{
 		// draw labels
 		fl_font( FL_COURIER, xp( 1 ) / 3 );
-		for ( int x = 1; x <= _G + 1; x++ )
+		for ( int x = 1; x <= _BS; x++ )
 		{
 			ostringstream os;
 			os << (char)('a' + x - 1);
 			fl_draw( os.str().c_str(), xp( x ) - xp( 1 ) / 8, yp( 0 ) + yp( 1 ) / 2 );
 		}
-		for ( int y = 1; y <= _G + 1; y++ )
+		for ( int y = 1; y <= _BS; y++ )
 		{
 			ostringstream os;
 			os << (char)('A' + y - 1);
@@ -1618,7 +1620,7 @@ void Gomoku::draw()
 	bool bgImage = child(0)->image();
 	if ( bgImage )
 	{
-		int W = xp( _G + 2 );
+		int W = xp( _BS + 1 );
 		fl_push_clip( 0, 0, W, W );
 		Inherited::draw();
 		fl_pop_clip();
@@ -1628,9 +1630,9 @@ void Gomoku::draw()
 	drawBoard( !bgImage );
 
 	// draw pieces
-	for ( int x = 1; x <= _G + 1; x++ )
+	for ( int x = 1; x <= _BS; x++ )
 	{
-		for ( int y = 1; y <= _G + 1; y++ )
+		for ( int y = 1; y <= _BS; y++ )
 		{
 			if ( _board[x][y] )
 			{
@@ -1644,10 +1646,10 @@ void Gomoku::draw()
 	{
 		fl_color( FL_DARK_GRAY );
 		fl_font( FL_HELVETICA|FL_BOLD, .8 * xp( 1 ) );
-		fl_draw( _message.c_str(), xp( 1 ) + 2, yp( 1 ) + 2, xp( _G ), yp( _G ),
+		fl_draw( _message.c_str(), xp( 1 ) + 2, yp( 1 ) + 2, xp( _BS - 1 ), yp( _BS - 1 ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 		fl_color( FL_YELLOW );
-		fl_draw( _message.c_str(), xp( 1 ) , yp( 1 ), xp( _G ), yp( _G ),
+		fl_draw( _message.c_str(), xp( 1 ) , yp( 1 ), xp( _BS - 1 ), yp( _BS - 1 ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 	}
 
@@ -1655,7 +1657,7 @@ void Gomoku::draw()
 	{
 		fl_color( FL_WHITE );
 		fl_font( FL_HELVETICA|FL_BOLD, xp( 1 ) / 3 );
-		fl_draw( _dmsg.c_str(), xp( 1 ), yp( _G + 1 ) + yp( 1 ) / 2, xp( _G ), yp( _G ),
+		fl_draw( _dmsg.c_str(), xp( 1 ), yp( _BS ) + yp( 1 ) / 2, xp( _BS - 1 ), yp( _BS - 1 ),
 			FL_ALIGN_CENTER | FL_ALIGN_TOP, 0, 0 );
 	}
 } // draw
