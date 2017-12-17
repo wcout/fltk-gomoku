@@ -285,6 +285,7 @@ public:
 	void dumpBoard( ostream& ofs_ = std::cout ) const;
 	void loadGame( const string& f_ );
 	void saveGame( const string& f_ ) const;
+	void dumpGame( ostream& ofs_ = std::cout ) const;
 	void makeMove();
 	void setPiece( const Move& move_, int who_ );
 	void wait( double delay_ );
@@ -696,24 +697,30 @@ void Gomoku::loadGame( const string& f_ )
 	}
 }
 
+void Gomoku::dumpGame( ostream& ofs_/* = std::cout*/ ) const
+//-------------------------------------------------------------------------------
+{
+	for ( size_t i = 0; i < _history.size(); i++ )
+	{
+		Move move( _history[i] );
+		int who = _board[move.x][move.y];
+		if ( who == COMPUTER && i == 0 )
+			ofs_ << "-\t";
+		ofs_ << move.asString();
+		if ( who == PLAYER )
+			ofs_ << "\t";
+		else
+			ofs_ << endl;
+	}
+}
+
 void Gomoku::saveGame( const string& f_ ) const
 //-------------------------------------------------------------------------------
 {
 	ofstream ofs( f_.c_str() );
 	if ( !ofs.is_open() )
 		return;
-	for ( size_t i = 0; i < _history.size(); i++ )
-	{
-		Move move( _history[i] );
-		int who = _board[move.x][move.y];
-		if ( who == COMPUTER && i == 0 )
-			ofs << "-\t";
-		ofs << move.asString();
-		if ( who == PLAYER )
-			ofs << "\t";
-		else
-			ofs << endl;
-	}
+	dumpGame( ofs );
 }
 
 int Gomoku::xp( int x_ ) const
@@ -1065,6 +1072,7 @@ void Gomoku::gameFinished( int winner_ )
 	// (winner_ will be 0 if adraw, otherwise PLAYER or COMPUTER)
 	if ( !_replay )
 	{
+		dumpGame( *_logStream );
 		if ( !_abort )
 			updateGameStats( winner_ );
 		_replayMoves = _history; // save the game history for replay
