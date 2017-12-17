@@ -282,10 +282,10 @@ public:
 	bool loadBoardFromFile( const string& f_ );
 	bool loadBoardFromString( const char *s_ );
 	void saveBoardToFile( const string& f_ ) const;
-	void dumpBoard( ostream& ofs_ = std::cout ) const;
+	std::ostream& dumpBoard( std::ostream& os_ = std::cout ) const;
 	void loadGame( const string& f_ );
 	void saveGame( const string& f_ ) const;
-	void dumpGame( ostream& ofs_ = std::cout ) const;
+	std::ostream& dumpGame( std::ostream& os_ = std::cout ) const;
 	void makeMove();
 	void setPiece( const Move& move_, int who_ );
 	void wait( double delay_ );
@@ -363,7 +363,7 @@ private:
 	string _dmsg;
 	string _bgImageFile;
 	Args _args;
-	ostream *_logStream;
+	std::ostream *_logStream;
 	// Note: this variables are only used as adresses for menu items
 	string _about;
 	string _abortGame;
@@ -638,27 +638,28 @@ bool Gomoku::loadBoard( istream& is_ )
 	return y >= _G + 1;
 }
 
-void Gomoku::dumpBoard( ostream& ofs_/* = std::cout*/ ) const
+std::ostream& Gomoku::dumpBoard( std::ostream& os_/* = std::cout*/ ) const
 //-------------------------------------------------------------------------------
 {
-	ofs_ << " ";
+	os_ << " ";
 	for ( int x = 1; x <= _G + 1; x++ )
-		ofs_ << " " << (char)('a' + x - 1);
-	ofs_ << endl;
+		os_ << " " << (char)('a' + x - 1);
+	os_ << endl;
 	for ( int y = 1; y <= _G + 1; y++ )
 	{
-		ofs_ << (char)('A' + y - 1) << " ";
+		os_ << (char)('A' + y - 1) << " ";
 		for ( int x = 1; x <= _G + 1; x++ )
 		{
 			int who = _board[x][y];
 			bool last = x == _move.x && y == _move.y;
 			char player = last ? 'P' : 'p';
 			char computer = last ? 'C' : 'c';
-			ofs_ << ( who ? ( who == PLAYER ? player  : computer ) : '.' ) << ' ';
+			os_ << ( who ? ( who == PLAYER ? player  : computer ) : '.' ) << ' ';
 		}
-		ofs_ << endl;
+		os_ << endl;
 	}
-	ofs_ << endl;
+	os_ << endl;
+	return os_;
 }
 
 void Gomoku::saveBoardToFile( const string& f_ ) const
@@ -708,7 +709,7 @@ void Gomoku::loadGame( const string& f_ )
 	}
 }
 
-void Gomoku::dumpGame( ostream& ofs_/* = std::cout*/ ) const
+std::ostream& Gomoku::dumpGame( std::ostream& os_/* = std::cout*/ ) const
 //-------------------------------------------------------------------------------
 {
 	for ( size_t i = 0; i < _history.size(); i++ )
@@ -716,13 +717,14 @@ void Gomoku::dumpGame( ostream& ofs_/* = std::cout*/ ) const
 		Move move( _history[i] );
 		int who = _board[move.x][move.y];
 		if ( who == COMPUTER && i == 0 )
-			ofs_ << "-\t";
-		ofs_ << move.asString();
+			os_ << "-\t";
+		os_ << move.asString();
 		if ( who == PLAYER )
-			ofs_ << "\t";
+			os_ << "\t";
 		else
-			ofs_ << endl;
+			os_ << endl;
 	}
+	return os_;
 }
 
 void Gomoku::saveGame( const string& f_ ) const
