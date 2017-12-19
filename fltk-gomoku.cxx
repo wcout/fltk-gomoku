@@ -1107,8 +1107,8 @@ void Gomoku::gameFinished( int winner_ )
 		return;
 
 	// query for replay
-	int answer = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 );
-	_replay = answer == 1;
+	if ( !( _replay = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 ) ) )
+		_args.boardFile.erase(); // use pre-loaded board only once (but keep for replay)!
 	_abort = false;
 
 	initPlay();
@@ -1224,7 +1224,6 @@ void Gomoku::initPlay()
 		_player = _board[ first_move.x ][ first_move.y ] == PLAYER;
 	}
 	clearBoard();
-	_args.boardFile.erase(); // use pre-loaded board only once!
 	redraw();
 }
 
@@ -1241,7 +1240,7 @@ void Gomoku::about()
 	}
 	fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
 	          "A minimal implementation of the \"5 in a row\" game.\n\n"
-	"(c) 2017 wcout wcout<gmx.net>" );
+	          "(c) 2017 wcout wcout<gmx.net>" );
 	if ( welcome )
 	{
 		_player = !_player;
