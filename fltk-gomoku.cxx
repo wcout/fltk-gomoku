@@ -508,6 +508,8 @@ void Gomoku::nextMove()
 		if ( !_abort && _history.size() < _replayMoves.size() )
 		{
 			_move = _replayMoves[ _history.size() ];
+			if ( !_player )
+				_move.value = eval( _move );
 			ostringstream os;
 			os << "Replay move " << _history.size() + 1 << "/" << _replayMoves.size();
 			_message = os.str();
