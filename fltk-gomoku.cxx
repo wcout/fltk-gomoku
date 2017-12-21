@@ -348,6 +348,7 @@ private:
 	bool _player;
 	bool _pondering;
 	Move _move;
+	Move _lastMove;
 	bool _waiting;
 	int _games;
 	int _moves;
@@ -802,7 +803,7 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 
 	// highlight piece(s)
 	bool winning_piece = checkWin( x_, y_ );
-	bool last_piece = _move.x == x_ && _move.y == y_;
+	bool last_piece = _lastMove.x == x_ && _lastMove.y == y_;
 	if ( last_piece || winning_piece )
 	{
 #ifdef FLTK_USE_NANOSVG
@@ -1150,6 +1151,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		_move = move_;
 		_board[ move_.x ][ move_.y ] = who_;
 		DBG( "Move " << _history.size() << ": " <<  move_ );
+		_lastMove = _move;
 		redraw();
 	}
 
@@ -1398,14 +1400,14 @@ int Gomoku::handleGameEvent( int e_ )
 		if ( !takeBackMoves() )
 			nextMove();
 	}
-	else if ( e_ == FL_MOVE && _move.x )
+	else if ( e_ == FL_MOVE && _lastMove.x )
 	{
 		// mouse moved - clear highlight on last move
 		static int moved = 0;
 		moved++;
 		if ( moved > 10 )
 		{
-			_move.x = 0;
+			_lastMove.x = 0;
 			moved = 0;
 			_message.erase();
 			redraw();
