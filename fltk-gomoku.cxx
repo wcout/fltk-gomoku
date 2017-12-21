@@ -1011,8 +1011,6 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 		m_.value += m_.eval.has3() * 50;
 		DBG( "eval has3 " << who << " at " << m_ );
 	}
-	if ( m_.value )
-		m_.value += ( who_ == COMPUTER );
 	return m_.value;
 }
 
@@ -1021,6 +1019,10 @@ int Gomoku::eval( Move& move_ ) const
 {
 	Move mc( move_.x, move_.y );
 	evaluate( mc, COMPUTER );
+	if ( mc.eval.wins() )
+		mc.value *= 10; // don't miss winning move!
+	else if ( mc.value ) // always just raise computer move above equal player move
+		mc.value += 1;
 
 	Move mp( move_.x, move_.y );
 	evaluate( mp, PLAYER );
