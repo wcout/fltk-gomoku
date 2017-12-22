@@ -164,6 +164,10 @@ struct Move
 		os_ << asString() << " (" << x << "/" << y << ") value: " << value;
 		return os_;
 	}
+	bool valid() const
+	{
+		return x > 0 && y > 0;
+	}
 };
 
 std::ostream& operator<<( std::ostream &os_, const Move &m_ )
@@ -323,6 +327,7 @@ private:
 	bool randomMove( Move& move_ ) const;
 	int evaluate( Move& m_, int who_ ) const;
 	int eval( Move& move_ ) const;
+	Move getMoveFromMousePosition() const;
 	int handleGameEvent( int e_ );
 	int handleWaitClickEvent( int e_ );
 	void initPlay();
@@ -334,6 +339,7 @@ private:
 	void selectAndLoadBoard();
 	void selectAndSaveGame();
 	void selectAndLoadGame();
+	void showPositionValue();
 	bool takeBackMove();
 	bool takeBackMoves();
 	static void cb_delay( void *d_ );
@@ -394,7 +400,7 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_wait_click( false ),
 	_replay( false ),
 	_abort( false ),
-	_debug( false ),
+	_debug( 0 ),
 	_alert( false ),
 	_logStream( &std::cout )
 //-------------------------------------------------------------------------------
@@ -1379,6 +1385,16 @@ void Gomoku::cb_menu( Fl_Widget *w_, void *d_ )
 	(static_cast<Gomoku *>(w_))->onMenu( d_ );
 }
 
+Move Gomoku::getMoveFromMousePosition() const
+//-------------------------------------------------------------------------------
+{
+	int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
+	int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
+	if ( x >= 1 && x <= _BS && y >= 1 && y <= _BS && _board[x][y] == 0 )
+		return Move( x, y );
+	return Move();
+}
+
 int Gomoku::handleGameEvent( int e_ )
 //-------------------------------------------------------------------------------
 {
@@ -1389,10 +1405,9 @@ int Gomoku::handleGameEvent( int e_ )
 	// place a piece with left mouse button
 	if ( e_ == FL_PUSH && Fl::event_button() == FL_LEFT_MOUSE )
 	{
-		int x = ( Fl::event_x() + xp( 1 ) / 2 ) / xp( 1 );
-		int y = ( Fl::event_y() + yp( 1 ) / 2 ) / yp( 1 );
-		if ( x >= 1 && x <= _BS && y >= 1 && y <= _BS && _board[x][y] == 0 )
-			setPiece( Move( x, y ), PLAYER );
+		Move move = getMoveFromMousePosition();
+		if ( move.valid() )
+			setPiece( move, PLAYER );
 		else
 			fl_beep( FL_BEEP_ERROR );
 		return 1;
@@ -1437,6 +1452,26 @@ int Gomoku::handleWaitClickEvent( int e_ )
 	return Inherited::handle( e_ );
 }
 
+void Gomoku::showPositionValue()
+//-------------------------------------------------------------------------------
+{
+	Move move = getMoveFromMousePosition();
+	if ( !move.valid() || _board[ move.x ][ move.y ] != 0 )
+	{
+		_dmsg.erase();
+		redraw();
+		return;
+	}
+	int debug = _debug;
+	_debug = 0; // do not create log messages in evaluation
+	ostringstream os;
+	eval( move );
+	os <<  move;
+	_dmsg = os.str();
+	redraw();
+	_debug = debug;
+}
+
 /*virtual */
 int Gomoku::handle( int e_ )
 //-------------------------------------------------------------------------------
@@ -1447,9 +1482,10 @@ int Gomoku::handle( int e_ )
 	// debug toggle is always allowed
 	if ( e_ == FL_KEYDOWN && Fl::event_key( 'd' ) )
 	{
-		_debug = !_debug;
+		_debug++;
+		_debug &= 3; // [0, 3]
 		_dmsg.erase();
-		std::cout << "debug " << ( _debug ? "ON" : "OFF" ) << endl;
+		std::cout << "debug " << _debug << endl;
 		redraw();
 	}
 	// show menu with right button
@@ -1457,6 +1493,10 @@ int Gomoku::handle( int e_ )
 	{
 		popupMenu();
 		return 1;
+	}
+	else if ( e_ == FL_MOVE && _debug > 1 )
+	{
+		showPositionValue();
 	}
 
 	if ( _wait_click )
