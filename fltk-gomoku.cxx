@@ -377,6 +377,7 @@ private:
 	string _about;
 	string _abortGame;
 	string _abortReplay;
+	string _playReplay;
 	string _loadBgImage;
 	string _clearBgImage;
 	string _saveBoard;
@@ -510,6 +511,9 @@ void Gomoku::nextMove()
 	{
 		if ( !waitKey() )
 			return;
+		if ( !_replay ) // "play from here" selected
+			return nextMove();
+
 		default_cursor( FL_CURSOR_WAIT );
 		_move.init();
 		if ( !_abort && _history.size() < _replayMoves.size() )
@@ -1372,10 +1376,11 @@ void Gomoku::onMenu( void *d_ )
 		selectBoardColor();
 	else if ( d_ == &_gridColor )
 		selectGridColor();
-	else if ( d_ == &_abortReplay )
+	else if ( d_ == &_abortReplay || d_ == &_playReplay )
 	{
 		_abort = true;
 		_wait_click = false;
+		_replay = d_ == &_abortReplay;
 	}
 }
 
@@ -1530,6 +1535,7 @@ bool Gomoku::popupMenu()
 	static Fl_Menu_Item replay_menu[] =
 	{
 		{ "Abort replay", 0, cb_menu, &_abortReplay },
+		{ "Play from here", 0, cb_menu, &_playReplay, FL_MENU_DIVIDER },
 		{ "Save board..", 0, cb_menu, &_saveBoard },
 		{ "Save game..", 0, cb_menu, &_saveGame },
 		{ 0 }
