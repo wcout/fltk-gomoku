@@ -830,7 +830,8 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 void Gomoku::onMove()
 //-------------------------------------------------------------------------------
 {
-	setPiece( _move, _player ? PLAYER : COMPUTER );
+	if ( shown() )
+		setPiece( _move, _player ? PLAYER : COMPUTER );
 }
 
 /*static*/
@@ -891,7 +892,7 @@ void Gomoku::makeMove()
 		randomMove( move );
 		DBG( "randomMove at " << move );
 	}
-	while ( _pondering )
+	while ( shown() && _pondering )
 		Fl::check();
 	fl_cursor( FL_CURSOR_ARROW );
 	_pondering = false;
