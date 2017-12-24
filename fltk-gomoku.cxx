@@ -1206,7 +1206,7 @@ void Gomoku::wait( double delay_ )
 	Fl::remove_timeout( cb_delay, this );
 	Fl::add_timeout( delay_, cb_delay, this );
 	_waiting = true;
-	while ( _waiting )
+	while ( shown() && _waiting )
 		Fl::check();
 	Fl::remove_timeout( cb_delay, this );
 	_waiting = false;
@@ -1215,15 +1215,11 @@ void Gomoku::wait( double delay_ )
 bool Gomoku::waitKey()
 //-------------------------------------------------------------------------------
 {
-	if ( !shown() ) // user closed program
-		return false;
 	_wait_click = true;
 	default_cursor( FL_CURSOR_MOVE );
-	while ( _wait_click && !_abort )
+	while ( shown() && _wait_click && !_abort )
 		Fl::check();
-	if ( !shown() ) // user closed program
-		return false;
-	return true;
+	return shown();
 }
 
 void Gomoku::initPlay()
