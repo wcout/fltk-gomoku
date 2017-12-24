@@ -345,6 +345,7 @@ private:
 	static void cb_delay( void *d_ );
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 	void onMenu( void *d_ );
+	void replayInfoMessage();
 	void updateGameStats( int winner_ );
 	static void cb_menu( Fl_Widget *w_, void *d_ );
 private:
@@ -504,11 +505,26 @@ bool Gomoku::clearBgImage()
 	return true;
 }
 
+void Gomoku::replayInfoMessage()
+//-------------------------------------------------------------------------------
+{
+	ostringstream os;
+	if ( _history.empty() )
+		_message = "Replay mode";
+	else
+	{
+		os << "Replay move " << _history.size() << "/" << _replayMoves.size();
+		_message = os.str();
+	}
+	redraw();
+}
+
 void Gomoku::nextMove()
 //-------------------------------------------------------------------------------
 {
 	if ( _replay )
 	{
+		replayInfoMessage();
 		if ( !waitKey() )
 			return;
 		if ( !_replay ) // "play from here" selected
@@ -521,9 +537,6 @@ void Gomoku::nextMove()
 			_move = _replayMoves[ _history.size() ];
 			if ( !_player )
 				_move.value = eval( _move );
-			ostringstream os;
-			os << "Replay move " << _history.size() + 1 << "/" << _replayMoves.size();
-			_message = os.str();
 		}
 		Fl::add_timeout( .1, cb_move, this );
 		return;
@@ -1127,11 +1140,7 @@ void Gomoku::gameFinished( int winner_ )
 
 	initPlay();
 
-	if ( _replay )
-	{
-		_message = "Replay mode";
-	}
-	else
+	if ( !_replay )
 	{
 		_replayMoves.clear();
 		if ( !_move.x ) // when pre-loaded board keep player,
@@ -1229,6 +1238,7 @@ void Gomoku::initPlay()
 	_dmsg.erase();
 	_move.init();
 	_wait_click = false;
+	_abort = false;
 	if ( _history.size() )
 	{
 		Move first_move = _history[0];
@@ -1450,6 +1460,7 @@ int Gomoku::handleWaitClickEvent( int e_ )
 	else if ( _replay && e_ == FL_KEYDOWN && Fl::event_key( FL_BackSpace ) )
 	{
 		takeBackMove();
+		replayInfoMessage();
 	}
 	return Inherited::handle( e_ );
 }
