@@ -1117,7 +1117,8 @@ void Gomoku::gameFinished( int winner_ )
 	// (winner_ will be 0 if adraw, otherwise PLAYER or COMPUTER)
 	if ( !_replay )
 	{
-		dumpGame( *_logStream );
+		if ( _debug )
+			dumpGame( *_logStream );
 		if ( !_abort )
 			updateGameStats( winner_ );
 		_replayMoves = _history; // save the game history for replay
