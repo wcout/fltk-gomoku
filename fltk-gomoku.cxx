@@ -1137,7 +1137,6 @@ void Gomoku::gameFinished( int winner_ )
 	// query for replay
 	if ( !( _replay = fl_choice( "Do you want to replay\nthe game?", "NO" , "YES", 0 ) ) )
 		_args.boardFile.erase(); // use pre-loaded board only once (but keep for replay)!
-	_abort = false;
 
 	initPlay();
 
@@ -1229,7 +1228,7 @@ bool Gomoku::waitKey()
 	default_cursor( FL_CURSOR_MOVE );
 	while ( shown() && _wait_click && !_abort )
 		Fl::check();
-	return shown();
+	return shown() && !_abort;
 }
 
 void Gomoku::initPlay()
@@ -1535,9 +1534,15 @@ bool Gomoku::popupMenu()
 		{ "Board color..", 0, cb_menu, &_boardColor },
 		{ "Board grid color..", 0, cb_menu, &_gridColor, FL_MENU_DIVIDER },
 		{ "Save board..", 0, cb_menu, &_saveBoard },
-		{ "Load board..", 0, cb_menu, &_loadBoard },
+		{ "Load board..", 0, cb_menu, &_loadBoard, FL_MENU_DIVIDER },
 		{ "Save game..", 0, cb_menu, &_saveGame },
 		{ "Load game..", 0, cb_menu, &_loadGame },
+		{ 0 }
+	};
+	static Fl_Menu_Item game_end_menu[] =
+	{
+		{ "Save board..", 0, cb_menu, &_saveBoard },
+		{ "Save game..", 0, cb_menu, &_saveGame },
 		{ 0 }
 	};
 	static Fl_Menu_Item replay_menu[] =
@@ -1549,7 +1554,7 @@ bool Gomoku::popupMenu()
 		{ 0 }
 	};
 	// some tuning of menu display
-	Fl_Menu_Item *menu = _replay ? replay_menu : game_menu;
+	Fl_Menu_Item *menu = _replay ? replay_menu : _wait_click ? game_end_menu : game_menu;
 	string title = _replay ? "replay" : "game";
 	Fl_Menu_Button ref( 0, 0, 0, 0 );
 	int ts = yp( 1 ) / 2;
