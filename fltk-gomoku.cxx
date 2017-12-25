@@ -1228,7 +1228,7 @@ bool Gomoku::waitKey()
 	default_cursor( FL_CURSOR_MOVE );
 	while ( shown() && _wait_click && !_abort )
 		Fl::check();
-	return shown() && !_abort;
+	return shown();
 }
 
 void Gomoku::initPlay()
