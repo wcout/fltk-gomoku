@@ -271,6 +271,7 @@ struct Args
 	string bgImageFile;
 	string boardFile;
 	string logFile;
+	string boardSize;
 };
 
 //-------------------------------------------------------------------------------
@@ -278,6 +279,7 @@ class Gomoku : public Fl_Double_Window
 //-------------------------------------------------------------------------------
 {
 #define DBG(a) { if ( _debug ) *_logStream << a << endl; }
+	enum BoardSize { BS_Small = 11, BS_Medium = 15, BS_Standard = 19 };
 	typedef Fl_Double_Window Inherited;
 public:
 	Gomoku( int argc_ = 0, char *argv_[] = 0 );
@@ -349,7 +351,7 @@ private:
 	void updateGameStats( int winner_ );
 	static void cb_menu( Fl_Widget *w_, void *d_ );
 private:
-	int _BS;
+	BoardSize _BS;
 	Board _board;
 	Eval _eval[24][24];
 	bool _player;
@@ -391,7 +393,7 @@ private:
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	Inherited( 600, 600, "FLTK Gomoku (\"5 in a row\")" ),
-	_BS( 19 ), // board size
+	_BS( BS_Standard ), // board size
 	_player( true ),
 	_pondering( false ),
 	_waiting( false ),
@@ -410,6 +412,10 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	parseArgs( argc_, argv_ );
 	if ( _args.logFile.size() )
 		_logStream = new ofstream( _args.logFile.c_str() );
+	if ( _args.boardSize == "medium" )
+		_BS = BS_Medium;
+	else if ( _args.boardSize == "small" )
+		_BS = BS_Small;
 
 	// Widget for background graphics
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
@@ -585,6 +591,11 @@ void Gomoku::parseArgs( int argc_, char *argv_[] )
 		{
 			if ( ++i < argc_ )
 				_args.logFile = argv_[i];
+		}
+		else if ( arg == "-bs" )
+		{
+			if ( ++i < argc_ )
+				_args.boardSize = argv_[i];
 		}
 		else if ( arg[0] != '-' )
 		{
