@@ -75,6 +75,10 @@ struct PosInfo
 	{
 		return ( n == 3 && canWin() ) || ( n == 4 && !gap && single_freedom() );
 	}
+	bool has2() const
+	{
+		return ( n == 2 && !gap && canWin() );
+	}
 	bool has3nogap() const
 	{
 		return ( n == 3 && !gap && canWin() ) || ( n == 4 && !gap && single_freedom() );
@@ -119,6 +123,10 @@ struct Eval
 		       ( info[2].has3() || info[2].has4() ) +
 		       ( info[3].has3() || info[3].has4() ) +
 		       ( info[4].has3() || info[4].has4() ) >= 2;
+	}
+	int has2() const
+	{
+		return info[1].has2() + info[2].has2() + info[3].has2() + info[4].has2();
 	}
 };
 
@@ -1041,11 +1049,18 @@ int Gomoku::evaluate( Move& m_, int who_ ) const
 		DBG( "eval has3nogap " << who << " at " << m_ );
 	}
 
-	else if ( m_.eval.has3() )
+	if ( m_.eval.has3() )
 	{
 		m_.value += m_.eval.has3() * 50;
 		DBG( "eval has3 " << who << " at " << m_ );
 	}
+
+	if ( m_.eval.has2() )
+	{
+		m_.value += m_.eval.has2() * 10;
+		DBG( "eval has2 " << who << " at " << m_ );
+	}
+
 	return m_.value;
 }
 

@@ -1,5 +1,5 @@
 # If using a not installed FLTK version, specify it's path here (with '/' at end)
-#FLTK := ../fltk-1.4/
+FLTK := ../fltk-1.4/
 FLTK_CONFIG := $(FLTK)fltk-config
 
 SRC := fltk-gomoku.cxx
