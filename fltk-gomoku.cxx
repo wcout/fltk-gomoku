@@ -417,6 +417,8 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_logStream( &std::cout )
 //-------------------------------------------------------------------------------
 {
+	setIcon(); // set icon from "default look"
+
 	parseArgs( argc_, argv_ );
 	if ( _args.logFile.size() )
 		_logStream = new ofstream( _args.logFile.c_str() );
@@ -429,8 +431,6 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
 	end();
 	bg->box( FL_FLAT_BOX );
-
-	setIcon(); // set icon from "default look"
 
 	fl_message_title_default( label() );
 
@@ -455,6 +455,15 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_cfg->get( "W", W, w() );
 	_cfg->get( "X", X, x() );
 	_cfg->get( "Y", Y, y() );
+
+	// Try to correct board display size
+	int sx, sy, sw, sh;
+	if ( W < 200 )
+		W = 200;
+	Fl::screen_work_area( sx, sy, sw, sh );
+	if ( W > sh )
+		W = sh;
+	W = ( W / ( _BS + 1 ) ) * ( _BS + 1 );
 
 	_cfg->get( "debug", _debug, _debug );
 	_cfg->get( "alert", _alert, _alert );
@@ -855,10 +864,10 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 		svg_hi_piece->resize( rw, rh );
 		svg_hi_piece->draw( x - rw / 2, y - rh / 2 );
 #else
-		fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
 		fl_color( last_piece ? FL_CYAN : color_ == 1 ? FL_GREEN : FL_RED );
+		fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
 		fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
-		fl_line_style( 0, 0 );
+		fl_line_style( 0 );
 #endif
 	}
 } // drawPiece
@@ -911,7 +920,7 @@ bool Gomoku::randomMove( Move& move_ ) const
 		return false;
 	if ( !r )
 		r = moves.size();
-	r = random() % r;
+	r = rand() % r;
 	move_ = moves[r];
 	return true;
 } // randomMove
@@ -1011,7 +1020,7 @@ bool Gomoku::findMove( Move& move_ ) const
 	DBG( equal.size() << " moves with value " << max_value );
 	for ( size_t i = 0; i < equal.size(); i++ )
 		DBG( "\t" << equal[i] );
-	int move = random() % equal.size();
+	int move = rand() % equal.size();
 	move_ = equal[move];
 	return true;
 } // findMove
@@ -1640,7 +1649,7 @@ void Gomoku::drawBoard( bool bg_/* = false*/ ) const
 		fl_line_style( FL_SOLID, 2 ); // for outline
 	fl_rect( -2, -2, xp( _BS + 1 ) + 2, yp( _BS + 1 ) + 2, FL_DARK_GRAY );
 	fl_rect( xp( 1 ), yp( 1 ), xp ( _BS - 1 ) + 1, yp( _BS - 1 ) + 1, BOARD_GRID_COLOR );
-	fl_line_style( 0 , 0 );
+	fl_line_style( 0 );
 	for ( int x = 1; x <= _BS; x++ )
 		fl_line( xp( x ), yp( 1 ), xp( x ), yp( _BS ) );
 
@@ -1686,7 +1695,7 @@ void Gomoku::drawBoard( bool bg_/* = false*/ ) const
 void Gomoku::setIcon()
 //-------------------------------------------------------------------------------
 {
-	Fl_Image_Surface *rgb_surf = new Fl_Image_Surface( w(), h(), 1 );
+	Fl_Image_Surface *rgb_surf = new Fl_Image_Surface( w(), h() );
 	rgb_surf->set_current();
 	drawBoard( true );
 	Fl_RGB_Image *icon_image = rgb_surf->image();
