@@ -49,8 +49,8 @@ static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
 static Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
 static Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 
-static const int PLAYER = 1;
-static const int COMPUTER = 2;
+static int PLAYER = 1;
+static int COMPUTER = 2;
 
 //-------------------------------------------------------------------------------
 struct PosInfo
@@ -295,6 +295,8 @@ public:
 	void about();
 	void abortGame();
 	void clearBoard();
+	void changeSides();
+	void changeColor();
 	bool loadBoardFromFile( const string& f_ );
 	bool loadBoardFromString( const char *s_ );
 	void saveBoardToFile( const string& f_ ) const;
@@ -320,6 +322,7 @@ protected:
 	void selectGridColor();
 	void setBgImage( Fl_Image *bgTile_ );
 	bool waitKey();
+	std::string yourMovePrompt() const;
 private:
 	int xp( int x_ ) const;
 	int yp( int y_ ) const;
@@ -374,6 +377,8 @@ private:
 	bool _wait_click;
 	bool _replay;
 	bool _abort;
+	bool _autoplay;
+	bool _playerAsWhite;
 	vector<Move> _history;
 	vector<Move> _replayMoves;
 	int _debug; // Note: using int instead of bool for signature of preferences
@@ -397,6 +402,8 @@ private:
 	string _gridColor;
 	string _loadGame;
 	string _saveGame;
+	string _changeSides;
+	string _changeColor;
 };
 
 Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
@@ -412,6 +419,8 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_wait_click( false ),
 	_replay( false ),
 	_abort( false ),
+	_autoplay( false ),
+	_playerAsWhite( true ),
 	_debug( 0 ),
 	_alert( false ),
 	_logStream( &std::cout )
@@ -542,6 +551,12 @@ void Gomoku::replayInfoMessage()
 	redraw();
 }
 
+std::string Gomoku::yourMovePrompt() const
+//-------------------------------------------------------------------------------
+{
+	return "Your move as " + ( _playerAsWhite ? (string)"white" : "black" );
+}
+
 void Gomoku::nextMove()
 //-------------------------------------------------------------------------------
 {
@@ -564,14 +579,22 @@ void Gomoku::nextMove()
 		Fl::add_timeout( .1, cb_move, this );
 		return;
 	}
-	if ( _player )
+	if ( _player && !_autoplay )
 	{
-		_message = "Your move";
+		_message = yourMovePrompt();
 		default_cursor( FL_CURSOR_HAND );
 	}
 	else
 	{
+		if ( _autoplay )
+		{
+			int temp = PLAYER;
+			PLAYER = COMPUTER;
+			COMPUTER = temp;
+			_player = !_player;
+		}
 		_message = "Thinking...";
+		redraw();
 		makeMove();
 	}
 }
@@ -839,12 +862,15 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 		svg_win_white_piece = new Fl_SVG_Image( NULL, Win_White_Piece );
 	if ( !svg_win_black_piece )
 		svg_win_black_piece = new Fl_SVG_Image( NULL, Win_Black_Piece );
-	Fl_SVG_Image *svg_piece = color_ == 1 ? svg_white_piece : svg_black_piece;
+	Fl_SVG_Image *svg_piece = color_ == 1 ?
+		_playerAsWhite ? svg_white_piece : svg_black_piece :
+		_playerAsWhite ? svg_black_piece : svg_white_piece;
 	svg_piece->resize( rw, rh );
 	svg_piece->draw( x - rw / 2, y - rh / 2 );
 #else
 	// white or black piece
-	fl_color( color_ == 1 ? FL_WHITE : FL_BLACK );
+	fl_color( color_ == 1 ? _playerAsWhite ? FL_WHITE : FL_BLACK :
+	                        _playerAsWhite ? FL_BLACK : FL_WHITE);
 	fl_pie( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
 
 	// outline
@@ -875,6 +901,14 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 void Gomoku::onMove()
 //-------------------------------------------------------------------------------
 {
+	if ( _autoplay )
+	{
+		_autoplay = false;
+		int temp = PLAYER;
+		PLAYER = COMPUTER;
+		COMPUTER = temp;
+		_player = !_player;
+	}
 	if ( shown() )
 		setPiece( _move, _player ? PLAYER : COMPUTER );
 }
@@ -1394,6 +1428,21 @@ void Gomoku::selectAndLoadGame()
 	}
 }
 
+void Gomoku::changeSides()
+//-------------------------------------------------------------------------------
+{
+	_autoplay = true;
+	nextMove();
+}
+
+void Gomoku::changeColor()
+//-------------------------------------------------------------------------------
+{
+	_playerAsWhite = !_playerAsWhite;
+	_message = yourMovePrompt();
+	redraw();
+}
+
 void Gomoku::onMenu( void *d_ )
 //-------------------------------------------------------------------------------
 {
@@ -1417,6 +1466,10 @@ void Gomoku::onMenu( void *d_ )
 		selectBoardColor();
 	else if ( d_ == &_gridColor )
 		selectGridColor();
+	else if ( d_ == &_changeSides )
+		changeSides();
+	else if ( d_ == &_changeColor )
+		changeColor();
 	else if ( d_ == &_abortReplay || d_ == &_playReplay )
 	{
 		_abort = true;
@@ -1564,6 +1617,8 @@ bool Gomoku::popupMenu()
 	{
 		{ "About..", 0, cb_menu, &_about, FL_MENU_DIVIDER },
 		{ "Abort game", 0, cb_menu, &_abortGame },
+		{ "Change color", 0, cb_menu, &_changeColor },
+		{ "Move for me this turn", 0, cb_menu, &_changeSides, FL_MENU_DIVIDER },
 		{ "Load board image..", 0, cb_menu, &_loadBgImage },
 		{ "Remove board image", 0, cb_menu, &_clearBgImage },
 		{ "Board color..", 0, cb_menu, &_boardColor },
