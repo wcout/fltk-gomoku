@@ -356,6 +356,8 @@ private:
 	bool takeBackMove();
 	bool takeBackMoves();
 	static void cb_delay( void *d_ );
+	void dmsg( const string& m_ ) { _dmsg = m_; redraw(); }
+	void message( const string& m_ ) { _message = m_; redraw(); }
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 	void onMenu( void *d_ );
 	void replayInfoMessage();
@@ -542,13 +544,12 @@ void Gomoku::replayInfoMessage()
 {
 	ostringstream os;
 	if ( _history.empty() )
-		_message = "Replay mode";
+		message( "Replay mode" );
 	else
 	{
 		os << "Replay move " << _history.size() << "/" << _replayMoves.size();
-		_message = os.str();
+		message( os.str() );
 	}
-	redraw();
 }
 
 std::string Gomoku::yourMovePrompt() const
@@ -581,7 +582,7 @@ void Gomoku::nextMove()
 	}
 	if ( _player && !_autoplay )
 	{
-		_message = yourMovePrompt();
+		message( yourMovePrompt() );
 		default_cursor( FL_CURSOR_HAND );
 	}
 	else
@@ -593,8 +594,7 @@ void Gomoku::nextMove()
 			COMPUTER = temp;
 			_player = !_player;
 		}
-		_message = "Thinking...";
-		redraw();
+		message( "Thinking..." );
 		makeMove();
 	}
 }
@@ -1174,8 +1174,7 @@ void Gomoku::finishedMessage( int winner_ )
 	}
 	else
 	{
-		_message = msg.str();
-		redraw();
+		message( msg.str() );
 	}
 }
 
@@ -1231,7 +1230,7 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 	{
 		ostringstream ss;
 		ss << "Value: " << move_.value;
-		_dmsg = ss.str();
+		dmsg( ss.str() );
 	}
 
 	// if no move was found by computer it has generated an "empty" move
@@ -1324,8 +1323,7 @@ void Gomoku::about()
 	if ( welcome )
 	{
 		loadBoardFromString( board_welcome );
-		_message = "*** WELCOME to ***";
-		redraw();
+		message ( "*** WELCOME to ***" );
 		Fl::flush();
 	}
 	fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
@@ -1435,8 +1433,7 @@ void Gomoku::changeColor()
 //-------------------------------------------------------------------------------
 {
 	_playerAsWhite = !_playerAsWhite;
-	_message = yourMovePrompt();
-	redraw();
+	message( yourMovePrompt() );
 }
 
 void Gomoku::onMenu( void *d_ )
@@ -1555,8 +1552,7 @@ void Gomoku::showPositionValue()
 	Move move = getMoveFromMousePosition();
 	if ( !move.valid() || _board[ move.x ][ move.y ] != 0 )
 	{
-		_dmsg.erase();
-		redraw();
+		dmsg( "" );
 		return;
 	}
 	int debug = _debug;
@@ -1564,8 +1560,7 @@ void Gomoku::showPositionValue()
 	ostringstream os;
 	eval( move );
 	os <<  move;
-	_dmsg = os.str();
-	redraw();
+	dmsg( os.str() );
 	_debug = debug;
 }
 
@@ -1581,9 +1576,8 @@ int Gomoku::handle( int e_ )
 	{
 		_debug++;
 		_debug &= 3; // [0, 3]
-		_dmsg.erase();
+		dmsg( "" );
 		std::cout << "debug " << _debug << endl;
-		redraw();
 	}
 	// show menu with right button
 	else if ( e_ == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE )
@@ -1669,8 +1663,7 @@ bool Gomoku::takeBackMove()
 		if ( _history.size() )
 			move = _history.back();
 		_move = move;
-		_dmsg.erase();
-		redraw();
+		dmsg( "" );
 		if ( _debug )
 			dumpBoard( *_logStream );
 		return true;
