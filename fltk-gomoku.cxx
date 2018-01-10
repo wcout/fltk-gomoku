@@ -1,7 +1,7 @@
 /*
  FLTK Gomoku.
 
- (c) 2017 wcout wcout<gmx.net>
+ (c) 2017-2018 wcout <wcout@gmx.net>
 
  A minimal implementation of the "5 in a row" game.
 
@@ -17,7 +17,7 @@
  http://www.gnu.org/licenses/.
 
 */
-#define VERSION "v1.1"
+#define VERSION "v1.2"
 
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
@@ -1330,7 +1330,7 @@ void Gomoku::about()
 	}
 	fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
 	          "A minimal implementation of the \"5 in a row\" game.\n\n"
-	          "(c) 2017 wcout wcout<gmx.net>" );
+	          "(c) 2017-2018 wcout <wcout@@gmx.net>" );
 	if ( welcome )
 	{
 		_player = !_player;
@@ -1386,8 +1386,7 @@ void Gomoku::selectAndSaveBoard()
 //-------------------------------------------------------------------------------
 {
 	static char *fname = 0;
-	fname = fl_file_chooser( "Save board to file",
-		"*.{txt}", fname );
+	fname = fl_file_chooser( "Save board to file", "*.{txt}", fname );
 	if ( fname )
 		saveBoardToFile( fname );
 }
@@ -1396,8 +1395,7 @@ void Gomoku::selectAndLoadBoard()
 //-------------------------------------------------------------------------------
 {
 	static char *fname = 0;
-	fname = fl_file_chooser( "Load board from file",
-		"*.{txt}", fname );
+	fname = fl_file_chooser( "Load board from file", "*.{txt}", fname );
 	if ( fname )
 	{
 		_args.boardFile = fname; // board gets loaded via abortGame()
@@ -1409,8 +1407,7 @@ void Gomoku::selectAndSaveGame()
 //-------------------------------------------------------------------------------
 {
 	static char *fname = 0;
-	fname = fl_file_chooser( "Save game to file",
-		"*.{gom}", fname );
+	fname = fl_file_chooser( "Save game to file", "*.{gom}", fname );
 	if ( fname )
 		saveGame( fname );
 }
@@ -1419,8 +1416,7 @@ void Gomoku::selectAndLoadGame()
 //-------------------------------------------------------------------------------
 {
 	static char *fname = 0;
-	fname = fl_file_chooser( "Load game from file",
-		"*.{gom}", fname );
+	fname = fl_file_chooser( "Load game from file",	"*.{gom}", fname );
 	if ( fname )
 	{
 		abortGame();	// current game will be discarded
@@ -1522,7 +1518,7 @@ int Gomoku::handleGameEvent( int e_ )
 		// mouse moved - clear highlight on last move
 		static int moved = 0;
 		moved++;
-		if ( moved > 10 )
+		if ( moved > xp( 1 ) )
 		{
 			_lastMove.x = 0;
 			moved = 0;
@@ -1653,7 +1649,7 @@ bool Gomoku::popupMenu()
 	// show it
 	fl_cursor( FL_CURSOR_ARROW );
 	const Fl_Menu_Item *item = menu->popup( Fl::event_x(), Fl::event_y(),
-		title.c_str(), 0, &ref );
+	                                        title.c_str(), 0, &ref );
 	fl_cursor( FL_CURSOR_DEFAULT );
 	if ( item ) item->do_callback( this, item->user_data() );
 	return item != 0;
