@@ -327,8 +327,6 @@ private:
 	int xp( int x_ ) const;
 	int yp( int y_ ) const;
 	void onMove();
-	static void cb_move( void *d_ );
-	static void cb_ponder( void *d_ );
 	int count( int x_, int y_, int dx_, int dy_, PosInfo& info_ ) const;
 	void countPos( int x_, int y_, Eval &pos_, const Board &board_ ) const;
 	void countPos( int x_, int y_, Eval &pos_ ) const;
@@ -346,6 +344,7 @@ private:
 	void initPlay();
 	bool loadBoard( istream& is_ );
 	void onDelay();
+	void onNextMove();
 	bool popupMenu();
 	void selectAndLoadBgImage();
 	void selectAndSaveBoard();
@@ -355,14 +354,33 @@ private:
 	void showPositionValue();
 	bool takeBackMove();
 	bool takeBackMoves();
-	static void cb_delay( void *d_ );
 	void dmsg( const string& m_ ) { _dmsg = m_; redraw(); }
 	void message( const string& m_ ) { _message = m_; redraw(); }
 	void pondering( bool pondering_ ) { _pondering = pondering_; }
 	void onMenu( void *d_ );
 	void replayInfoMessage();
 	void updateGameStats( int winner_ );
-	static void cb_menu( Fl_Widget *w_, void *d_ );
+	// callback helpers
+	static void cb_move( void *d_ )
+	{
+		(static_cast<Gomoku *>(d_))->onMove();
+	}
+	static void cb_next_move( void *d_ )
+	{
+		static_cast<Gomoku *>( d_ )->onNextMove();
+	}
+	static void cb_ponder( void *d_ )
+	{
+		(static_cast<Gomoku *>(d_))->pondering( false );
+	}
+	static void cb_delay( void *d_ )
+	{
+		static_cast<Gomoku *>( d_ )->onDelay();
+	}
+	static void cb_menu( Fl_Widget *w_, void *d_ )
+	{
+		(static_cast<Gomoku *>(w_))->onMenu( d_ );
+	}
 private:
 	BoardSize _BS;
 	Board _board;
@@ -559,6 +577,13 @@ std::string Gomoku::yourMovePrompt() const
 }
 
 void Gomoku::nextMove()
+//-------------------------------------------------------------------------------
+{
+	Fl::remove_timeout( cb_next_move, this );
+	Fl::add_timeout( 0.01, cb_next_move, this );
+}
+
+void Gomoku::onNextMove()
 //-------------------------------------------------------------------------------
 {
 	if ( _replay )
@@ -913,20 +938,6 @@ void Gomoku::onMove()
 		setPiece( _move, _player ? PLAYER : COMPUTER );
 }
 
-/*static*/
-void Gomoku::cb_ponder( void *d_ )
-//-------------------------------------------------------------------------------
-{
-	(static_cast<Gomoku *>(d_))->pondering( false );
-}
-
-/*static*/
-void Gomoku::cb_move( void *d_ )
-//-------------------------------------------------------------------------------
-{
-	(static_cast<Gomoku *>(d_))->onMove();
-}
-
 bool Gomoku::randomMove( Move& move_ ) const
 //-------------------------------------------------------------------------------
 {
@@ -1270,13 +1281,6 @@ void Gomoku::onDelay()
 	_waiting = false;
 }
 
-/*static*/
-void Gomoku::cb_delay( void *d_ )
-//-------------------------------------------------------------------------------
-{
-	static_cast<Gomoku *>( d_ )->onDelay();
-}
-
 void Gomoku::wait( double delay_ )
 //-------------------------------------------------------------------------------
 {
@@ -1339,7 +1343,6 @@ void Gomoku::about()
 void Gomoku::abortGame()
 //-------------------------------------------------------------------------------
 {
-	_abort = true;
 	initPlay();
 	nextMove();
 }
@@ -1469,13 +1472,6 @@ void Gomoku::onMenu( void *d_ )
 		_wait_click = false;
 		_replay = d_ == &_abortReplay;
 	}
-}
-
-/*static*/
-void Gomoku::cb_menu( Fl_Widget *w_, void *d_ )
-//-------------------------------------------------------------------------------
-{
-	(static_cast<Gomoku *>(w_))->onMenu( d_ );
 }
 
 Move Gomoku::getMoveFromMousePosition() const
