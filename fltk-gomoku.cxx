@@ -1,5 +1,6 @@
 /*
- FLTK Gomoku.
+
+ FLTK Gomoku
 
  (c) 2017-2018 wcout <wcout@gmx.net>
 
@@ -1756,7 +1757,7 @@ void Gomoku::draw()
 {
 	// FIXME: window sizes to full desktop when double click
 	//        on title bar (does not keep aspect), so we need
-	//        a background clip the bg image to board size.
+	//        to clip the bg image to board size.
 	fl_rectf( 0, 0, w(), h(), FL_DARK_GRAY );
 
 	bool bgImage = child(0)->image();
