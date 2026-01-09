@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.2
+Type=Application
+Name=fltk-gomoku
+Comment=FLTK Gomoku (Five in Row) Game
+Exec=fltk-gomoku %F
+Icon=$HOME/.fltk-gomoku/rsc/fltk-gomoku.png
+StartupWMClass=fltk-gomoku
+Categories=Game
