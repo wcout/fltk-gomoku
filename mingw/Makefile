@@ -1,5 +1,5 @@
 # specify path to FLTK dir (mingw compiled)
-FLTK_DIR=../../fltk-1.4-mingw32/
+FLTK_DIR=../../fltk/build_mingw32/
 
 export ROOT?=$(PWD)/..
 
@@ -39,13 +39,14 @@ LDLIBS=`$(FLTK_CONFIG) --use-images --ldstaticflags` -static -lgcc -static -lstd
 LDLIBSCPP=-static -lgcc -static -lstdc++ -dynamic -static -lwinmm
 
 FLTKCXXFLAGS = `$(FLTK_CONFIG) --cxxflags`
-CXXDEFS+=-DUSE_FLTK_RUN=$(USE_FLTK_RUN)
-CXXDEFS+=-DHAVE_SLOW_CPU=$(HAVE_SLOW_CPU)
-CXXFLAGS+=$(CXXDEFS) -g -Wall -pedantic $(INCLUDE) $(FLTKCXXFLAGS)
+CXXFLAGS+=$(CXXDEFS) -std=c++17 -g -Wall -pedantic $(INCLUDE) $(FLTKCXXFLAGS)
 #OPT=
 OPT=-O3 -DNDEBUG
-OPT+=-DFLTK_USE_NANOSVG
 
+ifeq ($(wildcard ../miniaudio.h),)
+else
+OPT += -DUSE_MINIAUDIO
+endif
 
 CP=cp
 MV=mv
