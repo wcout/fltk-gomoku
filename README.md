@@ -2,11 +2,11 @@
 
 *A minimal implementation of the "5 in a row" game.*
 
-`v1.0  15/11/2017`
+`v1.3  03/02/2026`
 
 ![Screenshot of FLTK Gomoku (with custom background)](fltk-gomoku.png "Screenshot of FLTK Gomoku (with custom background)")
 
-Requires `FLTK 1.3` or above.
+Requires `FLTK 1.4` or above.
 
 Set pieces alternately (against the computer) on a
 19x19 grid board.

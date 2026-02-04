@@ -2,7 +2,7 @@
 
  FLTK Gomoku
 
- (c) 2017-2018 wcout <wcout@gmx.net>
+ (c) 2017-2026 wcout <wcout@gmx.net>
 
  A minimal implementation of the "5 in a row" game.
 
@@ -18,14 +18,13 @@
  http://www.gnu.org/licenses/.
 
 */
-#define VERSION "v1.2"
+#define VERSION "v1.3"
+#define APPLICATION "fltk-gomoku"
 
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
-#ifdef FLTK_USE_NANOSVG
 #include <FL/Fl_SVG_Image.H>
-#endif
 #include <FL/Fl_Preferences.H>
 #include <FL/Fl_Image_Surface.H>
 #include <FL/Fl_Shared_Image.H>
@@ -42,16 +41,56 @@
 #include <cstdlib>
 #include <cmath>
 #include <ctime>
+#include <filesystem>
+#include <exception>
 #include "welcome.h"
+
+#ifdef USE_MINIAUDIO
+#define MA_IMPLEMENTATION
+#define MA_NO_ENCODING
+#define MA_NO_FLAC
+#define MA_NO_WAV
+#define MA_NO_OPENSL
+#define MA_NO_WEBAUDIO
+#define MA_NO_CUSTOM
+#define MA_NO_GENERATION
+#include "miniaudio.h"
+class Audio
+{
+public:
+	Audio()
+	{
+		// Initialize the engine
+		if (ma_engine_init(NULL, &_engine) != MA_SUCCESS)
+		{
+			std::cerr << "Failed to initialize audio engine.\n";
+		}
+	}
+	void play(const std::string &filename_)
+	{
+		// Play the sound asynchronously.
+		// This function returns immediately.
+		ma_engine_play_sound(&_engine, filename_.c_str(), NULL);
+	}
+	~Audio()
+	{
+		ma_engine_stop(&_engine);
+	}
+private:
+	ma_engine _engine;
+};
+#endif
 
 using namespace std;
 
-static const Fl_Color FL_DARK_GRAY = fl_darker( FL_GRAY );
+static const Fl_Color FL_DARK_GRAY = fl_rgb_color(64, 64, 64);
 static Fl_Color BOARD_COLOR = fl_rgb_color( 0xdc, 0xb3, 0x5c );
 static Fl_Color BOARD_GRID_COLOR = FL_BLACK;
 
 static int PLAYER = 1;
 static int COMPUTER = 2;
+
+
 
 //-------------------------------------------------------------------------------
 struct PosInfo
@@ -298,6 +337,7 @@ public:
 	void clearBoard();
 	void changeSides();
 	void changeColor();
+	const string& homeDir() const;
 	bool loadBoardFromFile( const string& f_ );
 	bool loadBoardFromString( const char *s_ );
 	void saveBoardToFile( const string& f_ ) const;
@@ -410,6 +450,9 @@ private:
 	string _bgImageFile;
 	Args _args;
 	std::ostream *_logStream;
+#ifdef USE_MINIAUDIO
+	Audio _audio;
+#endif
 	// Note: this variables are only used as adresses for menu items
 	string _about;
 	string _abortGame;
@@ -457,6 +500,7 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	else if ( _args.boardSize == "small" )
 		_BS = BS_Small;
 
+
 	// Widget for background graphics
 	Fl_Box *bg = new Fl_Box( 0, 0, w(), h() );
 	end();
@@ -473,7 +517,7 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	free( temp );
 
 	if ( _args.bgImageFile.size() )
-		bgImageFile = _args.bgImageFile.c_str(); // overrule by cmd line arg
+		bgImageFile = _args.bgImageFile; // overrule by cmd line arg
 	loadBgImage( bgImageFile );
 
 	int W, X, Y;
@@ -498,6 +542,8 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 	_cfg->get( "debug", _debug, _debug );
 	_cfg->get( "alert", _alert, _alert );
 
+	DBG( "homeDir: " << homeDir() );
+
 	int board_color = (int)BOARD_COLOR;
 	_cfg->get( "board_color", board_color, board_color );
 	int grid_color = (int)BOARD_GRID_COLOR;
@@ -512,6 +558,40 @@ Gomoku::Gomoku( int argc_/* = 0*/, char *argv_[]/* = 0*/ ) :
 
 	clearBoard();
 	nextMove();
+}
+
+const string& Gomoku::homeDir() const
+//-------------------------------------------------------------------------------
+{
+	static std::string home;
+	if ( home.empty() )
+	{
+		char home_path[FL_PATH_MAX];
+		if ( std::filesystem::exists( "rsc/move.mp3" ) )
+		{
+			home = "./";
+		}
+		else
+		{
+#ifdef WIN32
+			fl_filename_expand( home_path, "$APPDATA/" );
+#else
+			fl_filename_expand( home_path, "$HOME/." );
+#endif
+			home = home_path;
+			home += APPLICATION;
+			home += "/";
+			if ( std::filesystem::exists( home + "rsc/move.mp3" ) )
+			{
+				;
+			}
+			else
+			{
+				throw std::runtime_error("Required resources not in place!\nAborting...");
+			}
+		}
+	}
+	return home;
 }
 
 void Gomoku::setBgImage( Fl_Image *bgTile_ )
@@ -858,18 +938,18 @@ int Gomoku::yp( int y_ ) const
 void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 //-------------------------------------------------------------------------------
 {
-#ifdef FLTK_USE_NANOSVG
 	#include "go_w_svg.h"
 	#include "go_b_svg.h"
 	#include "last_piece.h"
 	#include "win_w.h"
 	#include "win_b.h"
+
 	static Fl_SVG_Image *svg_white_piece = 0;
 	static Fl_SVG_Image *svg_black_piece = 0;
 	static Fl_SVG_Image *svg_last_piece = 0;
 	static Fl_SVG_Image *svg_win_white_piece = 0;
 	static Fl_SVG_Image *svg_win_black_piece = 0;
-#endif
+
 	// calc. dimensions
 	int x = xp( x_ );
 	int y = yp( y_ );
@@ -877,7 +957,7 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 	int rh = yp( 1 );
 	rw -= ceil( (double)rw / 10 );
 	rh -= ceil( (double)rh / 10 );
-#ifdef FLTK_USE_NANOSVG
+
 	if ( !svg_white_piece )
 		svg_white_piece = new Fl_SVG_Image( NULL, Go_White_Piece );
 	if ( !svg_black_piece )
@@ -893,34 +973,17 @@ void Gomoku::drawPiece( int color_, int x_, int y_ ) const
 		_playerAsWhite ? svg_black_piece : svg_white_piece;
 	svg_piece->resize( rw, rh );
 	svg_piece->draw( x - rw / 2, y - rh / 2 );
-#else
-	// white or black piece
-	fl_color( color_ == 1 ? _playerAsWhite ? FL_WHITE : FL_BLACK :
-	                        _playerAsWhite ? FL_BLACK : FL_WHITE);
-	fl_pie( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
-
-	// outline
-	fl_color( FL_DARK_GRAY );
-	fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
-#endif
 
 	// highlight piece(s)
 	bool winning_piece = checkWin( x_, y_ );
 	bool last_piece = _lastMove.x == x_ && _lastMove.y == y_;
 	if ( last_piece || winning_piece )
 	{
-#ifdef FLTK_USE_NANOSVG
 		Fl_SVG_Image *svg_hi_piece = last_piece ? svg_last_piece :
 		                             color_ == 1 ? svg_win_white_piece :
 		                             svg_win_black_piece;
 		svg_hi_piece->resize( rw, rh );
 		svg_hi_piece->draw( x - rw / 2, y - rh / 2 );
-#else
-		fl_color( last_piece ? FL_CYAN : color_ == 1 ? FL_GREEN : FL_RED );
-		fl_line_style( FL_SOLID, ceil( (double)rw / 20 ) );
-		fl_arc( x - rw / 2, y - rh / 2, rw, rh, 0, 360 );
-		fl_line_style( 0 );
-#endif
 	}
 } // drawPiece
 
@@ -1204,8 +1267,15 @@ void Gomoku::gameFinished( int winner_ )
 		_replayMoves = _history; // save the game history for replay
 	}
 
-	wait( 0.5 );
+#ifdef USE_MINIAUDIO
+	if ( winner_ == 0 )
+		_audio.play( homeDir() + "rsc/adraw.mp3" );
+	else
+		_audio.play( winner_ == PLAYER ? homeDir() + "rsc/you_win.mp3" : homeDir() + "rsc/you_lost.mp3" );
+#else
 	fl_beep( FL_BEEP_MESSAGE );
+#endif
+	wait( 0.5 );
 
 	// prepare/show the right message
 	finishedMessage( winner_ );
@@ -1252,6 +1322,9 @@ void Gomoku::setPiece( const Move& move_, int who_ )
 		_history.push_back( move_ );
 		_move = move_;
 		_board[ move_.x ][ move_.y ] = who_;
+#ifdef USE_MINIAUDIO
+		_audio.play( homeDir() + "rsc/move.mp3" );
+#endif
 		DBG( "Move " << _history.size() << ": " <<  move_ );
 		_lastMove = _move;
 		redraw();
@@ -1331,6 +1404,9 @@ void Gomoku::about()
 		message ( "*** WELCOME to ***" );
 		Fl::flush();
 	}
+#ifdef USE_MINIAUDIO
+	_audio.play( homeDir() + "rsc/welcome.mp3" );
+#endif
 	fl_alert( "FLTK Gomoku\n" VERSION "\n\n"
 	          "A minimal implementation of the \"5 in a row\" game.\n\n"
 	          "(c) 2017-2018 wcout <wcout@@gmx.net>" );
@@ -1814,6 +1890,14 @@ int main( int argc_, char *argv_[] )
 	Fl::background( 240, 240, 240 );
 	fl_register_images();
 	srand( time( 0 ) );
-	Gomoku g( argc_, argv_ );
-	return Fl::run();
+	try
+	{
+		Gomoku g( argc_, argv_ );
+		return Fl::run();
+	}
+	catch ( const std::runtime_error &e_ )
+	{
+		fl_alert( "%s", e_.what() );
+	}
+	return EXIT_FAILURE;
 }
